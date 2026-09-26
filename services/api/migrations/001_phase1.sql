@@ -66,7 +66,7 @@ CREATE TABLE auth_sessions (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     staff_id bigint REFERENCES staff_accounts(id),
     customer_id bigint REFERENCES customers(id),
-    token_hash text NOT NULL UNIQUE,
+    token_hash text NOT NULL UNIQUE CHECK (btrim(token_hash) <> ''),
     expires_at timestamptz NOT NULL,
     revoked_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -144,7 +144,7 @@ CREATE TABLE orders (
     customer_id bigint REFERENCES customers(id),
     created_by_staff_id bigint REFERENCES staff_accounts(id),
     source text NOT NULL CHECK (source IN ('CONSUMER', 'STORE')),
-    checkout_key text NOT NULL UNIQUE,
+    checkout_key text NOT NULL UNIQUE CHECK (btrim(checkout_key) <> ''),
     contact_name text NOT NULL CHECK (btrim(contact_name) <> ''),
     contact_mobile varchar(20) NOT NULL CHECK (btrim(contact_mobile) <> ''),
     fulfillment text NOT NULL CHECK (fulfillment IN ('PICKUP', 'DELIVERY')),
@@ -179,14 +179,18 @@ CREATE TABLE orders (
     CHECK (
         (fulfillment = 'PICKUP' AND delivery_name IS NULL AND delivery_mobile IS NULL
             AND delivery_address IS NULL AND delivery_pincode IS NULL)
-        OR (fulfillment = 'DELIVERY' AND delivery_name IS NOT NULL AND delivery_mobile IS NOT NULL
-            AND delivery_address IS NOT NULL AND delivery_pincode ~ '^[0-9]{6}$'
+        OR (fulfillment = 'DELIVERY' AND delivery_name IS NOT NULL AND btrim(delivery_name) <> ''
+            AND delivery_mobile IS NOT NULL AND btrim(delivery_mobile) <> ''
+            AND delivery_address IS NOT NULL AND btrim(delivery_address) <> ''
+            AND delivery_pincode IS NOT NULL AND delivery_pincode ~ '^[0-9]{6}$'
             AND flour_pickup_mode IS NULL AND requested_pickup_at IS NULL AND arrived_at IS NULL)
     ),
     CHECK (
         (flour_pickup_mode IS NULL AND requested_pickup_at IS NULL AND arrived_at IS NULL)
-        OR (flour_pickup_mode = 'IN_FRONT' AND requested_pickup_at IS NULL)
-        OR (flour_pickup_mode = 'IN_ADVANCE' AND requested_pickup_at IS NOT NULL AND arrived_at IS NULL)
+        OR (flour_pickup_mode IS NOT NULL AND (
+            (flour_pickup_mode = 'IN_FRONT' AND requested_pickup_at IS NULL)
+            OR (flour_pickup_mode = 'IN_ADVANCE' AND requested_pickup_at IS NOT NULL AND arrived_at IS NULL)
+        ))
     )
 );
 
@@ -238,7 +242,7 @@ CREATE TABLE payments (
     amount_inr numeric(12, 2) NOT NULL CHECK (amount_inr > 0),
     currency char(3) NOT NULL DEFAULT 'INR' CHECK (currency = 'INR'),
     status text NOT NULL CHECK (status IN ('PENDING', 'PAID', 'FAILED')),
-    attempt_key text NOT NULL UNIQUE,
+    attempt_key text NOT NULL UNIQUE CHECK (btrim(attempt_key) <> ''),
     provider text,
     provider_reference text,
     expires_at timestamptz,
@@ -259,9 +263,17 @@ CREATE TABLE payments (
         OR (method IN ('UPI', 'CARD') AND provider IS NOT NULL AND expires_at IS NOT NULL
             AND collected_by_staff_id IS NULL AND collected_at IS NULL)
     ),
+    CHECK (method = 'CASH' OR status <> 'PAID' OR
+        (provider_reference IS NOT NULL AND btrim(provider_reference) <> '')),
     CHECK (refund_amount_inr IS NULL OR (refund_amount_inr > 0 AND refund_amount_inr <= amount_inr)),
     CHECK (refund_status = 'NONE' OR status = 'PAID'),
-    CHECK (refund_status <> 'REFUNDED' OR (refund_confirmed_at IS NOT NULL AND refund_amount_inr IS NOT NULL))
+    CHECK (
+        (refund_status = 'NONE' AND refund_amount_inr IS NULL AND refund_requested_at IS NULL
+            AND refund_confirmed_at IS NULL AND refund_reference IS NULL AND refunded_by_staff_id IS NULL)
+        OR (refund_status <> 'NONE' AND refund_amount_inr IS NOT NULL AND refund_requested_at IS NOT NULL)
+    ),
+    CHECK (refund_status <> 'REFUNDED' OR
+        (refund_confirmed_at IS NOT NULL AND (method <> 'CASH' OR refunded_by_staff_id IS NOT NULL)))
 );
 
 CREATE UNIQUE INDEX one_cash_payment_per_order ON payments(order_id) WHERE method = 'CASH';
@@ -291,7 +303,7 @@ CREATE TABLE reward_transactions (
     customer_id bigint REFERENCES customers(id),
     action text NOT NULL CHECK (action IN ('EARN', 'REDEEM', 'RESTORE', 'ADJUST')),
     points integer NOT NULL CHECK (points <> 0),
-    action_key text NOT NULL UNIQUE,
+    action_key text NOT NULL UNIQUE CHECK (btrim(action_key) <> ''),
     reason text,
     created_at timestamptz NOT NULL DEFAULT now(),
     CHECK (customer_id IS NOT NULL OR (action = 'EARN' AND order_id IS NOT NULL)),
