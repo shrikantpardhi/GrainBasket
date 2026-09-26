@@ -2,6 +2,20 @@
 
 Build in this order: **admin web → store Android → consumer Android**. Each stage extends the same Node.js API and PostgreSQL database; no application connects directly to PostgreSQL. Follow the [Phase 1 scope](phase-1.md), [shared operations](operations.md) and the acceptance checks in each application specification. This is build sequence, not a change to the agreed launch scope: all three apps must work before Phase 1 opens to customers.
 
+## Monorepo layout
+
+```text
+apps/
+  admin-web/          React admin panel
+  store-android/      Kotlin/Jetpack Compose staff app
+  consumer-android/   Kotlin/Jetpack Compose customer app
+services/
+  api/                Node.js API and its PostgreSQL migrations
+docs/                 Business, application and shared specifications
+```
+
+Keep each application in its own folder and build it with its native tooling; all three communicate through the API in `services/api/`, which alone connects to PostgreSQL. Add shared packages only when there is code to share, and add the future iOS consumer app under `apps/` when it is planned. The new folders are placeholders only: no source files, build configuration or database migrations are being added yet.
+
 ## 1. Admin web and shared foundation
 
 - Set up the Node.js API, PostgreSQL migrations, React admin app and secure HTTPS entrypoint. Implement admin sign-in, role checks, revocable sessions and private database access first.
