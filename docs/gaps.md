@@ -1,6 +1,6 @@
 # Gaps, decisions and roadmap
 
-This reviews the seven original root-level specifications on `shrikantpardhi-patch-1` against the product owner's clarified [Phase 1](phase-1.md): one Nagpur store, flour/rice, English/Hindi/Marathi, consumer UPI/card payments, staff-entered cash/online orders, and separate consumer/store/admin apps sharing one backend and database. [Phase 2](phase-2.md) proposes the second-store pilot. **Open** means an implementation or operating decision still needs an owner before launch.
+This reviews the seven original root-level specifications on `shrikantpardhi-patch-1` against the product owner's clarified [Phase 1](phase-1.md): one Nagpur store, flour/rice and two flour pickup choices, English/Hindi/Marathi, consumer UPI/card payments, staff-entered cash/online orders, purchase reward points, and separate consumer/store/admin apps sharing one backend and database. [Phase 2](phase-2.md) proposes the second-store pilot. **Open** means an implementation or operating decision still needs an owner before launch.
 
 ## Contradictions resolved in the revised specification
 
@@ -19,10 +19,13 @@ The product owner confirmed the core launch scope above. Coupons, banners, saved
 
 | Priority | Gap / consequence | Proposed small first step | Owner to confirm |
 | --- | --- | --- | --- |
-| **Before launch** | Store hours, order cutoff, capacity and delivery area are unspecified; customers may order when the store cannot fulfill. | Confirm hours, cutoff and supported pincodes; reject orders outside the confirmed rules. | Store owner |
+| **Before launch** | Daily store opening/closing times, order cutoff, capacity and delivery area are unspecified; customers may order when the store cannot fulfill. | Confirm local opening/closing hours, cutoff and supported pincodes; display hours and reject orders outside the confirmed rules. | Store owner |
+| **Before launch** | Flour pickup choices require realistic arrival waits and available ready-in-advance times. | Confirm whether 30 minutes after arrival is a sustainable baseline, preparation lead time and pickup availability. Show delayed estimates in the store queue and consumer app; do not promise an exact queue position. | Store owner |
 | **Before launch** | Delivery fee, minimum order and delivery fulfillment expectations are unspecified. | Confirm one flat fee, any minimum and who delivers; show fee before payment. | Store owner |
 | **Before launch** | UPI/card gateway, fees, settlement, refund timing, failure/timeout behavior and support ownership are unspecified. | Choose the gateway during implementation and confirm supported UPI/card flows for both apps; agree reservation expiry, late-success refunds, cancellation refund process and daily reconciliation. No specific provider is required in this specification. | Business/engineering |
 | **Before launch** | Staff-entered cash orders need a cash receipt, reconciliation and manual refund policy. | Collect cash at order entry, record staff actor/amount/time, reconcile daily against the till and record manual refunds only once after money is returned. | Store owner/admin |
+| **Before launch** | Purchase points have no earning rate, redemption minimum/value/limit or refund adjustment policy. | Approve one simple rule, show its value before payment and keep a positive cash/UPI/card balance. Credit only completed orders and reconcile refunds and unclaimed staff-order points. | Business/store owner |
+| **Before launch** | Collecting names/mobile for orders does not authorize marketing; rewards must not depend on marketing permission. | Confirm separate optional opt-in text, withdrawal and retention rules. Use verified mobile ownership before points redemption or claiming staff-order points. | Business/product |
 | **Before launch** | Hindi/Marathi UI and catalog text has no assigned translator, review or fallback policy. | Appoint language reviewer; approve three-language content for checkout, payment, order status and catalog. Use English fallback only when approved. | Product/content |
 | **Before launch** | Tax treatment, product classification, receipts and invoice obligations are unspecified. | Obtain local accounting advice, define tax-inclusive/exclusive display and required receipt/invoice fields before taking real orders. | Business/accountant |
 | **Before launch** | “Freshly milled,” rice age, organic and nutrition claims lack a verification process; packaging and food-sale requirements are not documented. | Record supplier/batch and milling/packing practice offline; verify local food-sale and labeling requirements; show only claims the store can substantiate. | Store owner |
@@ -33,13 +36,13 @@ The product owner confirmed the core launch scope above. Coupons, banners, saved
 | **During build** | Variant vs grind inventory, stock races, price changes, duplicate charges/cash receipts and past-order integrity are undefined. | Use variant stock and order-item grind; atomic expiring online reservation, atomic cash order/receipt creation, explicit quote confirmation, idempotent submit and item snapshots. | Engineering/store |
 | **During build** | How customers learn order progress is vague (“live notifications” promised). | Show status on refresh; set support contact on order details. Add push only after operational reliability is proven. | Product/store |
 
-The open decisions do not change the confirmed three apps, languages, online payment methods or staff-entered cash option. If a decision changes that scope, revise [Phase 1](phase-1.md) and then its acceptance checks before implementation.
+The open decisions do not change the confirmed three apps, languages, online payment methods, staff-entered cash option, flour pickup modes or purchase rewards. If a decision changes that scope, revise [Phase 1](phase-1.md) and then its acceptance checks before implementation.
 
 ## Release order
 
-1. **Phase 1: validate one Nagpur store.** Three apps, three languages, flour/rice, pickup/delivery, consumer phone checkout, staff-entered cash/online orders, verified UPI/card payments, refunds and order statuses.
+1. **Phase 1: validate one Nagpur store.** Three apps, three languages, flour/rice, two flour pickup modes with queue estimates, pickup/delivery, consumer phone checkout, staff-entered cash/online orders, verified UPI/card payments, purchase points, refunds and order statuses.
 2. **Phase 2: expand the proven journey.** Add a second Nagpur store with store-specific catalog, inventory, delivery and staff permissions. Consider saved addresses, promotions and richer notifications separately. See the [Phase 2 specification](phase-2.md).
-3. **Later:** Delivery partner app, other cities, loyalty, reviews, subscriptions, new prepared products and B2B sales need separate operating plans.
+3. **Later:** Delivery partner app, other cities, loyalty tiers/campaigns, reviews, subscriptions, new prepared products and B2B sales need separate operating plans.
 
 ## Source coverage
 

@@ -4,7 +4,7 @@ GrainBasket starts with one store in Nagpur: customers order freshly milled flou
 
 | Read | Purpose |
 | --- | --- |
-| [Phase 1 business specification](docs/phase-1.md) | One Nagpur store, flour/rice, three languages and apps; consumer UPI/card and staff-entered cash/online orders. **Source of truth for Phase 1 scope.** |
+| [Phase 1 business specification](docs/phase-1.md) | One Nagpur store, flour/rice pickup timing, three languages and apps, cash/online staff orders and purchase rewards. **Source of truth for Phase 1 scope.** |
 | [Consumer Android](docs/consumer.md) | Browse, checkout, payment and order tracking acceptance checks. |
 | [Store Android](docs/store.md) | Staff order entry, cash/online payment, paid order queue, preparation, handover and stock checks. |
 | [Admin web](docs/admin.md) | Store, catalog, translations, accounts and refund acceptance checks. |
