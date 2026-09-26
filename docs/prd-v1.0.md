@@ -1,0 +1,93 @@
+# GrainBasket v1.0 product requirements
+
+**Release scope:** A complete two-store Nagpur launch with a consumer Android app, a store Android app and a React admin web panel. All three support English, Hindi and Marathi and use one Node.js API and PostgreSQL database. The build order is admin → store → consumer, but **both stores and all three applications are required before v1.0 launches**. This document is the product and application source of truth; the [roadmap](implementation-roadmap.md) and [tasks](implementation-tasks.md) describe delivery.
+
+## Product and release boundary
+
+GrainBasket sells freshly milled flour and rice with a clearly identified, store-verified rice age. Customers select one of two Nagpur stores, order for pickup or delivery to a supported pincode, pay online and follow fulfillment. Staff at either store can enter an order without a consumer app, collect cash at entry or start online payment, and prepare and hand over paid orders. Admin configures both stores and reconciles payments, refunds and rewards. Verified customers have one shared points balance across stores.
+
+| Included in v1.0 | Outside v1.0 |
+| --- | --- |
+| Two explicitly selected stores with separate hours, delivery coverage/fees, staff, active offers, prices and stock; shared catalog and customer accounts. | Other cities, automatic geolocation/store selection, mixed-store carts, tenant infrastructure and a delivery partner app. |
+| Flour weights with fine/medium/coarse grind, rice weights with verified age, pickup preparation modes and local delivery. | Other product categories, coupons, campaigns, loyalty tiers, subscriptions, reviews, saved addresses and advanced analytics. |
+| Consumer and store Android apps in Kotlin/Jetpack Compose, React admin, shared Node.js API and private PostgreSQL database. | iOS consumer app, social login, offline order writes and push notifications. A later iOS app can use the same API and customer data. |
+| UPI/card consumer checkout; staff cash collected at entry or customer UPI/card payment; tracked refunds, earned/redeemable points and separate optional marketing consent. | Cash on pickup/delivery, card data storage, a fixed payment gateway or unapproved reward/tax rates. |
+
+## Shared store, catalog and checkout requirements
+
+1. The customer selects a store explicitly. For delivery, show only stores serving the entered six-digit pincode; for pickup, show store address, hours and weekly closed days. Changing stores clears the cart or requires a fresh quote. An order, its items, stock reservations and fulfillment belong to exactly one store. Staff order entry uses the signed-in staff member's store; admin can select either store.
+2. Admin configures each store's identity/contact, daily opening and closing hours, weekly closures, order cutoff, available pickup times, preparation lead time, supported delivery pincodes, flat fee and temporary ordering switch. No fixed hours are assumed. Checkout stays disabled until the selected store's settings are complete; reject closed or past-cutoff orders and unavailable pickup times using Nagpur local time.
+3. Flour and rice share catalog descriptions, images and English/Hindi/Marathi product/category translations with an approved English fallback. UI labels are translated in all three apps with bundled English fallback when translations cannot load; version UI keys with releases rather than arbitrary admin content. Weight and rice age identify stocked variants; flour grind is an item choice, not separate stock. Admin assigns each store its own active offers, selling prices, on-hand and reserved stock. Only verified age, organic or nutrition claims may be published. Inactive or unavailable offers cannot be ordered.
+4. Both checkouts require customer name and mobile. Consumer checkout verifies the mobile; ordinary staff checkout does not require an account or OTP and cannot silently link a typed number to a customer account. Delivery additionally requires recipient name, phone, address and supported pincode. Capture item names, translations, variant choices, quantity, unit price, fees, points, total, store and fulfillment details with the order so later catalog/price changes do not rewrite it.
+5. The backend recalculates activity, store offer, stock, hours, delivery coverage/fee, eligible points and decimal INR total. Show any legally required tax detail under the approved tax policy. If price, stock, schedule or points change, ask for reconfirmation before charging or collecting cash. Each checkout has a unique idempotency key; a retry retrieves its recorded outcome rather than creating another order/charge. No order mixes offers or consumes stock from another store.
+6. Atomically reserve selected-store stock and eligible points during pending payment, with expiry. Concurrent checkouts cannot oversell or spend points twice. Release reservations on failed/expired payment; restore redeemed points on cancellation once. Return cancelled stock only if it remains sellable; prepared stock needs a manual reconciliation with reason. Staff adjustments cannot consume stock reserved for other paid orders.
+
+## Flour preparation and order lifecycle
+
+- Each flour line specifies fine, medium or coarse grind. For a pickup containing flour, choose one mode for the whole order: **grind in front** or **prepare in advance for a selected pickup time**. Rice-only pickup needs no flour mode. Delivery flour is prepared before dispatch.
+- In-front grinding starts only after acceptance **and** staff check-in of customer arrival. Before check-in show “about 30 minutes after arrival,” not a fixed ready timestamp. After check-in, record arrival and staff actor, set a roughly 30-minute estimate and update it when queue work changes. Show the last arrival time allowed by store hours/lead time; handle late arrivals by agreement or cancellation/refund.
+- Advance pickup offers only times within the selected store's hours with enough lead time. Persist the requested time and prepare after acceptance to have the whole order ready then. If payment confirms too late or work slips, staff record a new estimate with actor, time and reason, and contact the customer. An estimate is never proof of readiness.
+- Paid store queues show the store's own orders by preparation priority, pickup mode, requested or arrival time, current estimate and delay. Staff record preparation, readiness, pickup or delivery transitions with actor and time. Delivery coordination is outside the app. Consumer customers see refreshed estimates and status; staff contact customers whose orders they entered.
+
+```text
+Consumer/staff online: AWAITING_PAYMENT → PLACED (verified) / PAYMENT_FAILED (failed or expired)
+Staff cash:            PLACED (cash collected and recorded at entry)
+PLACED → ACCEPTED → PREPARING → READY_FOR_PICKUP → COLLECTED
+                            └→ READY_FOR_DELIVERY → OUT_FOR_DELIVERY → DELIVERED
+PLACED / ACCEPTED / PREPARING / READY_* / OUT_FOR_DELIVERY → CANCELLED (staff reason required)
+PLACED → CANCELLED (own consumer order, before acceptance)
+```
+
+`AWAITING_PAYMENT` and `PAYMENT_FAILED` are visible to the originating app and admin but not actionable in fulfillment. Pickup and delivery branches cannot switch after payment. `PAYMENT_FAILED`, `COLLECTED`, `DELIVERED` and `CANCELLED` are terminal; post-handover returns use the approved support policy. Staff can cancel before handover with a reason, including an undelivered return. A paid cancellation initiates a separately tracked refund.
+
+## Identity, OTP, consent and rewards
+
+- Guest catalog browsing needs no login. Consumer checkout verifies the customer's mobile by OTP; store staff verify it by OTP before spending points or claiming points from a staff-entered order. An invalid, expired, already consumed or over-attempted code fails. The verification session is revocable; unverified typed numbers never unlock an existing balance.
+- **OTP resend cost rule:** For the same normalized mobile number, across the consumer and store apps and all OTP purposes, allow at most one accepted SMS request in any rolling **30-second** window. A request before 30 seconds have elapsed since the last accepted issuance sends **no SMS**, creates no new challenge and tells the user how long to wait. A request at or after 30 seconds may issue a new challenge, invalidating any previous unused one. Enforce this with server time and serialize concurrent requests so only one SMS can be initiated; do not extend the wait after a blocked request. This resend interval is separate from code expiry and verification-attempt limits. Apply additional abuse/rate limits without weakening the 30-second rule.
+- Store only a keyed digest of a code, never plaintext or a simple hash of a short OTP; keep the signing key outside the database, do not log codes, and consume a valid challenge atomically once. The existing challenge creation time and mobile index support the cooldown check; retain accepted issuance history for at least 30 seconds even if the code expires or is consumed. Record attempts, expiry and consumption; clean up older challenges according to the agreed retention policy. Do not disclose whether a mobile number has an account when handling requests.
+- Marketing opt-in is optional and unchecked by default. Record each choice, time and source; let customers withdraw consent without blocking orders, payment or rewards. Order contact information and points activity do not grant marketing permission.
+- Earn points **once** only after `COLLECTED` or `DELIVERED`, never for pending, failed or cancelled orders. An unverified staff order can earn unclaimed points tied to its order; link them to a verified customer's shared balance only after OTP verification of the order mobile. Record each earn, redeem, restore and correction with points, order/store where applicable, time and a unique action key; admin corrections also require a reason and staff actor.
+- Admin sets each store's earning rate, minimum balance for redemption, INR point value and maximum redemption; a customer's verified points balance is shared across stores. A verified customer can redeem only if the balance meets the selected store's minimum; the backend calculates and reserves eligible points without exceeding the quote or allowing concurrent double spending. Keep a positive payable amount for cash/UPI/card. Restore redeemed points once on failed/expired payment or cancellation; reverse earned points after a post-completion refund according to the approved policy.
+
+## Payment and refund rules
+
+- Consumer checkout offers UPI or card through a provider-hosted flow. Store checkout offers the same online methods or cash collected **when staff enter the order**; capture exact amount, collection time and staff actor atomically with a placed cash order. No application enters card details into GrainBasket, and no user or staff action can mark an online payment `PAID`.
+- The backend verifies provider webhook authenticity, reference, amount, INR currency and order association before making an online order `PLACED`. Handle duplicate and out-of-order callbacks once. Keep failed, pending and uncertain attempts distinguishable; expiry releases stock/points. On late success after reservation expiry, record reconciliation or a refund rather than quietly placing an unfulfillable order. Retry a failed payment only after the old outcome is known and a fresh quote is confirmed.
+- A paid cancellation marks the refund `PENDING`; it does not claim money has been returned. Request an online provider refund once and show `REFUNDED` only after provider confirmation. Admin records a cash return manually with amount, staff actor and time. Failed/pending refunds remain visible for reconciliation in admin, store and the customer's own order history; repeat requests cannot pay twice. Post-handover returns and refund timing follow the approved support policy.
+
+## Application requirements and acceptance
+
+### Consumer Android
+
+| Flow | Required result |
+| --- | --- |
+| Language and catalog | Choose and persist English, Hindi or Marathi; all checkout and status labels work in each language. Guest browsing shows translated active flour/rice offers, photos, weight, selected-store price/availability and verified rice age with English fallback. |
+| Select store and fulfill | Choose either Nagpur store explicitly; delivery filters by pincode, pickup shows address/hours. A store switch requotes the cart. Select supported delivery or either flour pickup mode; invalid pincode, closed window or unavailable advance time blocks checkout. |
+| Identity and pay | Provide name, verify mobile with OTP and see the 30-second resend countdown; optionally choose marketing consent. View server quote and shared verified points with minimum redemption; confirm UPI/card. Pending remains pending until server verification, with a safe check/retry path after uncertainty. |
+| History | View only own orders, the selected store name, item/fee/points/payment snapshots, status, cancellation/refund progress and earned/spent balance. Allow cancellation of one's own `PLACED` order before acceptance. Refresh arrival/requested/estimated ready times and delays; never show ready or refunded based only on a clock or client response. |
+
+### Store Android
+
+| Flow | Required result |
+| --- | --- |
+| Access and queue | Active staff sign in for their assigned store and choose a language. Show only that store's paid actionable orders; separate pending/failed online attempts. Include source, payment, pickup/delivery details and flour estimate/delay. No offline status write is assumed successful. |
+| Enter customer order | Select only assigned-store offers; capture name/mobile and separate marketing choice, delivery contact/address or flour pickup mode/time. Show server quote; collect cash at submission or start hosted online payment. Ordinary order entry works without customer login; for points redemption or later unclaimed-point claim, verify the customer's phone by OTP with the same resend rule. |
+| Prepare and hand over | Accept or cancel with reason, check in in-front grinding with staff actor, update delayed estimates with reason, prepare and mark ready, then mark pickup collected or delivery out/delivered. Reject unpaid, cross-store, wrong-branch or invalid transitions; refresh after uncertain network results. |
+| Stock | See assigned-store sellable and reserved inventory; correct stock only with a reason, without consuming another store's stock or already reserved units. |
+
+### Admin web
+
+| Flow | Required result |
+| --- | --- |
+| Access and setup | Active admins use secure sessions in any of the three languages; staff cannot enter admin functions. Select either store and configure identity, hours/closures/cutoff, lead time and pickup slots, delivery pincodes/fee and ordering switch. Missing configuration or inactive store cannot accept orders. |
+| Catalog and people | Manage shared flour/rice categories, evidence-backed claims, images, weights/rice ages and three-language content; assign offers with independent prices, active state and stock to each store. Create/deactivate staff, set role/store and revoke deactivated access. Historic order snapshots remain stable. |
+| Reconciliation and rewards | Review orders by store/source and cash versus online method, pending/failed payment attempts, cancellation reasons, outstanding/confirmed refunds, stock corrections, marketing choices and shared reward history. Confirm manual cash refunds with actor/time; correct points only with reason and staff actor. Admin cannot edit confirmed totals or mark provider payments paid. |
+| Basic reporting | Per-store counts of placed/completed/cancelled orders, payment attempts, cash, online failures/refunds, stock corrections and flour estimates versus actual readiness; distinguish attempts from paid orders. |
+
+## Data, deployment and release acceptance
+
+- The versioned [initial schema](../services/api/migrations/001_phase1.sql) and [store-offer migration](../services/api/migrations/002_phase2_store_offers.sql) are **both required before v1.0 stores are configured or accept orders**. The second file retains its historical Phase 2 name, but the two-store data model is v1.0 scope. Apply them in order to a fresh database; an existing populated one-store database needs a backup, one-store backfill and coordinated API change before adding the second store. Use `store_variant_offers` for all v1.0 prices, stock and offer activity. [Schema checks](../services/api/tests/schema.sql) cover representative relationships; the API enforces business transactions and ownership.
+- Store/customer/staff/session/OTP, catalog/translations/offer, order/item/status/ready estimate, stock reservation/adjustment, payment/refund, marketing-choice and reward setting/reservation/transaction records support these flows. Order and item snapshots preserve history. Store-bound order/item/offer/arrival/reward relationships prevent mixed-store data; authorization for other actions remains server-side.
+- Only the API accesses PostgreSQL on a private network. Use HTTPS at the public web/API entrypoint; a reverse proxy may terminate TLS, route traffic and cap request sizes if hosting does not already do so. Hash staff passwords, revoke sessions on deactivation, check role/store/customer ownership for every read/write, use secure HttpOnly admin cookies with SameSite and CSRF defenses, and secure short-lived Android tokens. Never trust clients for totals, role, payment outcome or points; validate uploaded images, parameterize queries, keep provider secrets outside source control and avoid logging phones, addresses or OTPs.
+- Review translations and store evidence, configure both stores, provider, reward values and approved tax/receipt/return policies, and test backup/restore before launch. Agree on customer-data retention. The business must set these operating values and policies before taking live orders; no values are invented by this PRD.
+- Release verification covers both stores, pickup and delivery in each language and each Android app, independent offer prices/stock/hours/coverage, consumer and staff online orders, staff cash orders, both flour modes, delays, expired/late payments, failed/refunded orders, shared points, marketing opt-out and cross-store/account denial. At 29 seconds a second OTP request sends no SMS; at 30 seconds it may send, and concurrent requests send at most one. Admin sees accurate per-store reconciliation. A v1.0 release is complete only when all three applications pass these checks together.
