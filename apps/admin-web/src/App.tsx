@@ -81,7 +81,8 @@ function OverviewPage({ t, store, summary, toStores }: {
       <div className="metric-label">{item.label}</div><strong>{item.number}</strong><span>{item.caption}</span>
     </div>)}</div>
     <div className="overview-bottom"><div className="panel readiness"><div className="eyebrow">{t('storeReadiness')}</div>
-      <h3>{store?.orderingEnabled ? t('ready') : t('paused')}</h3><p>{t('setupNeeded')}</p>
+      <h3>{store?.orderingEnabled ? t('ready') : t('paused')}</h3>
+      <p>{t(store?.orderingEnabled ? 'readyHelp' : 'setupNeeded')}</p>
       <button className="button secondary" onClick={toStores}>{t('openSettings')} <span aria-hidden>→</span></button></div>
       <div className="panel note-panel"><div className="eyebrow">GRAINBASKET / V1.0</div>
         <h3>{t('gettingStarted')}</h3><p>{t('gettingStartedInfo')}</p>
@@ -336,14 +337,16 @@ function ProductPanel({ catalog, locale, t, run }: { catalog: Catalog; locale: L
     {catalog.products.map((product) => <button className="catalog-list-item" key={product.id} onClick={() => edit(product)}>
       <span className="item-monogram">{product.nameEn.charAt(0)}</span>
       <span><strong>{displayName(catalog, product, 'productId', locale)}</strong>
-        <small>{catalog.categories.find((entry) => entry.id === product.categoryId)?.nameEn}</small></span>
+        <small>{catalog.categories.filter((entry) => entry.id === product.categoryId)
+          .map((entry) => displayName(catalog, entry, 'categoryId', locale))[0]}</small></span>
       <span className={`badge ${product.active ? 'active' : ''}`}>{t(product.active ? 'active' : 'inactive')}</span></button>)}
     </div><form className="panel form-panel" onSubmit={(event) => { void submit(event); }}>
       <div className="panel-title"><h2>{editing ? t('edit') : t('addProduct')}</h2>
         {editing && <button className="text-button" type="button" onClick={reset}>{t('cancel')}</button>}</div>
       <div className="form-grid"><Field label={t('category')}><select required value={categoryId}
         onChange={(event) => setCategoryId(event.target.value)}><option value="">{t('select')}</option>
-        {catalog.categories.map((category) => <option key={category.id} value={category.id}>{category.nameEn}</option>)}</select></Field>
+        {catalog.categories.map((category) => <option key={category.id} value={category.id}>
+          {displayName(catalog, category, 'categoryId', locale)}</option>)}</select></Field>
         <Field label={t('imageUrl')}><input type="url" placeholder="https://" value={imageRef}
           onChange={(event) => setImageRef(event.target.value)} /></Field></div>
       <TranslationFields t={t} names={names} descriptions={descriptions} setNames={setNames} setDescriptions={setDescriptions} />
@@ -389,7 +392,8 @@ function VariantPanel({ catalog, locale, t, run }: { catalog: Catalog; locale: L
       <div className="panel-title"><h2>{t('addVariant')}</h2></div>
       <div className="form-grid"><Field label={t('product')}><select required value={productId}
         onChange={(event) => setProductId(event.target.value)}><option value="">{t('select')}</option>
-        {catalog.products.map((entry) => <option key={entry.id} value={entry.id}>{entry.nameEn}</option>)}</select></Field>
+        {catalog.products.map((entry) => <option key={entry.id} value={entry.id}>
+          {displayName(catalog, entry, 'productId', locale)}</option>)}</select></Field>
         <Field label={t('weight')}><input type="number" min="1" required value={weight}
           onChange={(event) => setWeight(event.target.value)} /></Field>
         {isRice && <><Field label={t('riceAge')}><input required value={riceAge}
