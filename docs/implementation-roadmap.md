@@ -14,11 +14,11 @@ services/
 docs/                 Business, application and shared specifications
 ```
 
-Keep each application in its own folder and build it with its native tooling; all three communicate through the API in `services/api/`, which alone connects to PostgreSQL. Add shared packages only when there is code to share, and add the future iOS consumer app under `apps/` when it is planned. The new folders are placeholders only: no source files, build configuration or database migrations are being added yet.
+Keep each application in its own folder and build it with its native tooling; all three communicate through the API in `services/api/`, which alone connects to PostgreSQL. Add shared packages only when there is code to share, and add the future iOS consumer app under `apps/` when it is planned. The app folders are placeholders; the API folder holds the [initial Phase 1 SQL schema](../services/api/migrations/001_phase1.sql), with no application source or build configuration yet.
 
 ## 1. Admin web and shared foundation
 
-- Set up the Node.js API, PostgreSQL migrations, React admin app and secure HTTPS entrypoint. Implement admin sign-in, role checks, revocable sessions and private database access first.
+- Set up the Node.js API, apply and evolve the initial PostgreSQL schema, and build the React admin app and secure HTTPS entrypoint. Implement admin sign-in, role checks, revocable sessions and private database access first.
 - Add store configuration for daily opening/closing hours, weekly closed days, order cutoff, pickup preparation lead time, supported delivery pincodes and fee. Ordering remains disabled until required settings are entered.
 - Add flour/rice catalog, weight/age variants, stock, three-language catalog content, staff accounts and configurable reward values. Make the admin panel usable in English, Hindi and Marathi.
 - **Ready for store work when:** an admin can configure the Nagpur store, publish a translated flour and rice catalog, set reward values, and create/deactivate a staff account; unauthorized staff cannot change admin settings. Order/payment and refund screens are completed in stage 2, when their backend records exist.

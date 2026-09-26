@@ -1,6 +1,6 @@
 # Phase 1 operations and technical design
 
-This is the minimum shared model for the [Phase 1 business specification](phase-1.md) and its separate [consumer](consumer.md), [store](store.md) and [admin](admin.md) applications. It is a design guide, not executable SQL or a choice of specific Node.js framework.
+This is the minimum shared model for the [Phase 1 business specification](phase-1.md) and its separate [consumer](consumer.md), [store](store.md) and [admin](admin.md) applications. The initial [PostgreSQL schema](../services/api/migrations/001_phase1.sql) creates the tables; this guide defines the behavior the backend must enforce, not a choice of Node.js framework.
 
 ## Order lifecycle
 
@@ -75,4 +75,4 @@ Restrict personal data and reward balances by role and ownership. Each app calls
 - Validate and authorize every order/reward read/write; never trust client totals, points balances, statuses, online payment outcomes or role claims. Limit cash-paid order creation to authenticated staff, record their identity, and reconcile cash receipts and refunds. Verify provider callbacks server-side, limit login and checkout abuse, use parameterized database access, store secrets outside source control and avoid phone/address details in application logs. Send marketing only to customers with recorded opt-in; allow them to withdraw it without affecting orders or points.
 - Back up the database, test restoration, and restrict operator access before launch. Retention/deletion policy for customer contact and addresses must be settled with the business. If product images are uploaded, validate file type/size and serve from controlled storage rather than an executable directory.
 
-Interfaces can stay small: catalog/translations; OTP/session; consumer and staff quote/checkout with points; payment attempt and verified callback or staff cash collection; customer order/reward views; staff order entry/list/transition; admin catalog/stock/store/refund/reward settings. Define exact endpoints and migration scripts when implementation begins.
+Interfaces can stay small: catalog/translations; OTP/session; consumer and staff quote/checkout with points; payment attempt and verified callback or staff cash collection; customer order/reward views; staff order entry/list/transition; admin catalog/stock/store/refund/reward settings. Define exact endpoints and subsequent migrations when implementation begins.
