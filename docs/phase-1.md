@@ -1,6 +1,6 @@
 # Phase 1 business specification
 
-**Status:** Proposed Phase 1 baseline for business review. Open decisions are recorded in [Gaps and roadmap](gaps.md); do not treat assumptions as approved policy.
+**Status:** Phase 1 scope confirmed by the product owner: one Nagpur store, three applications, English/Hindi/Marathi, flour and rice, UPI/card payments, and staff-entered orders with cash or online payment. Operating and gateway decisions remain in [Gaps and roadmap](gaps.md).
 
 ## Why this exists
 
@@ -8,34 +8,34 @@ Customers buying staples may not know when flour was milled or how old rice is. 
 
 ## Phase 1 in one sentence
 
-A customer at the single Nagpur store can browse an available staple, select a weight and any relevant grind or rice-age choice, place an order for local delivery to a supported pincode or store pickup, and see its progress; the store can prepare and complete that order.
+A customer can order flour or rice from the single Nagpur store in English, Hindi or Marathi, choose delivery to a supported pincode or pickup, pay online by UPI or card, and follow fulfillment in the consumer app. Staff can also enter an order in the store app without the consumer app, collecting cash at entry or having the customer pay online. Admin manages the store in a separate panel. All three applications use one backend and database.
 
 ## Scope
 
 | Include in first release | Boundary |
 | --- | --- |
-| One store and a small curated catalog: flour and rice first; millets, pulses and dry fruits only where stock and content are ready | No store search, multi-store pricing or store-specific campaigns. One store record can hold address, hours, supported pincodes and delivery charge. |
+| One Nagpur store with flour and rice | No other categories, store search, multi-store pricing or store-specific campaigns. The store has an address, hours, supported delivery pincodes and delivery charge. |
 | Flour weight and grind choice; rice weight and age where verified by the store | Grind is a preparation choice on the order, not a separate stocked SKU. Rice age is a stocked variant. Do not label a product organic, gluten-free or with a specific rice age without evidence. |
-| Android customer app with phone OTP, basic catalog/cart/checkout, order list and status | English first; no social login, wishlist, extensive offline sync or push notifications. A refresh retrieves the latest status. |
+| Separate consumer Android and store Android apps, plus a web admin panel | Customer phone OTP; staff/admin protected accounts. Each app supports English, Hindi and Marathi. No social login, wishlist or extensive offline order sync. |
 | Pickup and delivery within configured pincodes; delivery address entered at checkout | No automatic nearby-store selection, GPS radius calculations, saved addresses or rider dispatch. Store staff coordinate delivery outside the app. |
-| Pay on delivery or pickup, with the price and delivery fee shown before confirmation | No UPI/card gateway, coupons, free-delivery thresholds or subscription billing. Business must confirm cash collection and tax/receipt policy before launch. |
-| One responsive web workspace for store staff and admin | Staff handle orders and stock; admin maintain catalog, prices, store settings and staff access. No separate store Android app or analytics dashboard. |
+| Consumer checkout uses UPI or card; store-entered checkout uses cash collected at entry or UPI/card | Final total appears before payment. Only provider-verified online or staff-confirmed cash orders enter the store queue. Failed/expired online attempts release stock; cancellation after payment requires a tracked provider or cash refund. Choose the payment gateway during implementation. |
+| Shared backend and PostgreSQL database | Consumer, store and admin apps access shared data through authorized APIs, never by direct database connections. No coupons, banners, loyalty or analytics dashboard in Phase 1. |
 
-The first release can launch with **flour and rice only**. Adding the remaining Phase 1 categories means adding stocked catalog entries, not new product behavior. This is a scope recommendation, subject to business approval.
+The application responsibilities and acceptance checks are in [Consumer](consumer.md), [Store](store.md) and [Admin](admin.md). Shared order, payment, language and data rules are in [Operations and data](operations.md).
 
 ## Order and fulfillment promise
 
-1. Customer browses available products, chooses pickup or enters a supported delivery pincode, and verifies a phone number at checkout.
-2. The cart captures product variant, quantity and grind choice if flour. Checkout recalculates availability, prices and delivery fee on the server; the customer sees and confirms the final total.
-3. Staff accept or cancel the order. Fresh flour is milled **after** acceptance. Staff prepare and pack the order, then mark it ready for pickup or delivery.
-4. For pickup, staff mark it collected after handover and payment. For delivery, staff mark it out for delivery and then delivered after handover and payment. Customers see these updates in their order history when online.
+1. Customer browses flour/rice, selects a weight and grind or rice age, selects pickup or an eligible delivery address, verifies a phone number, confirms the server total and starts UPI/card payment in the consumer app.
+2. Alternatively, staff enter a pickup or delivery order in the store app without requiring a customer account. They confirm the backend total, collect cash when entering the order or start customer UPI/card payment.
+3. Online payment must be verified by the backend; staff-recorded cash collection is auditable. Only paid orders enter the store queue. Staff accept or cancel, mill flour **after** acceptance, prepare and pack, then mark ready for pickup or delivery.
+4. Staff mark pickup collected or delivery out for delivery and delivered. Consumer-app customers see the status in their chosen language; staff-entered customers use the store contact channel. Paid cancellations show a tracked provider refund or cash refund record.
 
-See [Product journeys](product.md) for acceptance checks and [Operations and data](operations.md) for status transitions and stock rules.
+See the three application specifications for acceptance checks and [Operations and data](operations.md) for status, payment and stock rules.
 
 ## Measure a useful first release
 
-Track weekly: orders placed, accepted, cancelled with reasons, successfully fulfilled, time from placement to ready, and stock-related cancellations. Review customer feedback about flour freshness and rice-age accuracy. Do not set numerical targets before the store confirms capacity and baseline demand.
+Track weekly: orders by consumer/staff source and online/cash method, payment attempts/success/failures/refunds, paid orders accepted, cancelled with reasons, successfully fulfilled, time from payment confirmation to ready, and stock-related cancellations. Review customer feedback about flour freshness, rice-age accuracy and translation clarity. Do not set numerical targets before the store confirms capacity and baseline demand.
 
 ## Out of scope until later
 
-Multi-store discovery, other cities, delivery partner app, online payment, coupons, banners, loyalty, reviews, subscriptions, healthy snack production, backend-managed UI translations, and advanced reports. See [Gaps and roadmap](gaps.md) for sequencing and unresolved business policies.
+Multi-store discovery, other cities, delivery partner app, cash on delivery/pickup, coupons, banners, loyalty, reviews, subscriptions, healthy snack production, saved addresses and advanced reports. See [Phase 2](phase-2.md) and [Gaps and roadmap](gaps.md) for sequencing and unresolved policies.

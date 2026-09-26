@@ -4,10 +4,12 @@ GrainBasket starts with one store in Nagpur: customers order freshly milled flou
 
 | Read | Purpose |
 | --- | --- |
-| [Phase 1 business specification](docs/phase-1.md) | Customer problem, value proposition, Phase 1 boundary and success measures. **Source of truth for Phase 1 scope.** |
-| [Product journeys](docs/product.md) | Customer and store/admin workflows with acceptance checks. |
-| [Operations and data](docs/operations.md) | Fulfillment rules, minimum data model and architecture assumptions. |
+| [Phase 1 business specification](docs/phase-1.md) | One Nagpur store, flour/rice, three languages and apps; consumer UPI/card and staff-entered cash/online orders. **Source of truth for Phase 1 scope.** |
+| [Consumer Android](docs/consumer.md) | Browse, checkout, payment and order tracking acceptance checks. |
+| [Store Android](docs/store.md) | Staff order entry, cash/online payment, paid order queue, preparation, handover and stock checks. |
+| [Admin web](docs/admin.md) | Store, catalog, translations, accounts and refund acceptance checks. |
+| [Shared operations and data](docs/operations.md) | Fulfillment/payment rules, one database and security baseline. |
 | [Phase 2 specification](docs/phase-2.md) | Second-store expansion, entry criteria and optional improvements. |
 | [Gaps and roadmap](docs/gaps.md) | Conflicts found in the original specifications, open business decisions and later phases. |
 
-Read the Phase 1 specification first. When a later document disagrees with it, update the Phase 1 specification and then the dependent document. The seven root-level versioned specifications were consolidated into these five documents; the originals remain available in Git history on `shrikantpardhi-patch-1`.
+Read the Phase 1 specification first. The three applications share a backend and PostgreSQL database; only the backend connects to the database. When a later document disagrees with Phase 1, update it and then the dependent document. The seven root-level versioned specifications were consolidated into these seven documents; the originals remain available in Git history on `shrikantpardhi-patch-1`.
