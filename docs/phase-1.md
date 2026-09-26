@@ -14,7 +14,7 @@ A customer can order flour or rice from the single Nagpur store in English, Hind
 
 | Include in first release | Boundary |
 | --- | --- |
-| One Nagpur store with flour and rice | No other categories, store search, multi-store pricing or store-specific campaigns. Show configurable local opening and closing times, order cutoff, supported delivery pincodes and delivery charge. |
+| One Nagpur store with flour and rice | No other categories, store search, multi-store pricing or store-specific campaigns. Admin configures opening/closing times per day, weekly closed days and order cutoff; no fixed schedule is specified here. Show the configured schedule to customers and staff, alongside supported delivery pincodes and delivery charge. |
 | Flour weight and grind choice; rice weight and age where verified by the store | Grind texture is an order-item choice, not a stocked SKU. For flour pickup, choose grinding in front of the customer (about 30 minutes after arrival) or have it ready for a chosen pickup time. Rice age is a stocked variant. Do not label a product organic, gluten-free or with a specific rice age without evidence. |
 | Separate consumer and store Android apps using Kotlin/Jetpack Compose, plus a React admin web panel | One Node.js backend and PostgreSQL database. Customer phone OTP; staff/admin protected accounts. Each app supports English, Hindi and Marathi. No social login, wishlist or extensive offline order sync. |
 | Pickup at the store or delivery within configured pincodes; delivery address entered at checkout | No automatic nearby-store selection, GPS radius calculations, saved addresses or rider dispatch. Store staff coordinate delivery outside the app. |
