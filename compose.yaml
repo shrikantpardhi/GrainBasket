@@ -41,7 +41,7 @@ services:
       - "5173:5173"
     depends_on:
       - api
-    command: sh -c "npm ci && npm run dev:admin -- --host 0.0.0.0"
+    command: sh -c "npm ci && npm run dev:admin"
 volumes:
   postgres_data:
   api_modules:
