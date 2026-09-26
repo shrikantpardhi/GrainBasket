@@ -16,7 +16,7 @@ services/
 docs/                 v1.0 PRD, roadmap and implementation tasks
 ```
 
-Keep each application in its own folder and build it with native tooling; all three communicate through the API in `services/api/`, which alone connects to PostgreSQL. Add shared packages only when there is code to share, and add a future iOS consumer app under `apps/` when planned. The app folders are placeholders; the API folder holds [001](../services/api/migrations/001_phase1.sql) and [002](../services/api/migrations/002_phase2_store_offers.sql) migrations without application source yet. Apply both in order on a fresh v1.0 database **before** creating either store and its offers.
+Keep each application in its own folder and build it with native tooling; all three communicate through the API in `services/api/`, which alone connects to PostgreSQL. Add shared packages only when there is code to share, and add a future iOS consumer app under `apps/` when planned. The app folders are placeholders; the API folder holds [001](../services/api/migrations/001_phase1.sql), [002](../services/api/migrations/002_phase2_store_offers.sql) and [003](../services/api/migrations/003_v1_otp_and_store_audit.sql) migrations without application source yet. Apply all three in order on a fresh v1.0 database **before** creating either store and its offers.
 
 ## 1. Admin web and shared foundation
 

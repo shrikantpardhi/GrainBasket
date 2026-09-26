@@ -55,8 +55,8 @@ INSERT INTO order_items (order_id, store_id, variant_id, product_type,
 SELECT o.id, o.store_id, v.id, 'FLOUR', 'Wheat', 1000, 'FINE', 1, 150, 150
 FROM orders o CROSS JOIN product_variants v
 WHERE o.order_number = 'consumer-delivery' AND v.weight_grams = 1000;
-INSERT INTO payments (order_id, method, amount_inr, status, attempt_key, provider, expires_at)
-SELECT id, 'CARD', 170, 'PENDING', 'consumer-payment', 'test-provider',
+INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key, provider, expires_at)
+SELECT id, store_id, 'CARD', 170, 'PENDING', 'consumer-payment', 'test-provider',
     now() + interval '5 minutes' FROM orders WHERE order_number = 'consumer-delivery';
 INSERT INTO orders (order_number, store_id, created_by_staff_id, source, checkout_key,
     contact_name, contact_mobile, fulfillment, flour_pickup_mode, arrived_at,
@@ -71,13 +71,16 @@ INSERT INTO order_items (order_id, store_id, variant_id, product_type,
 SELECT o.id, o.store_id, v.id, 'FLOUR', 'Wheat', 1000, 'FINE', 1, 120, 120
 FROM orders o CROSS JOIN product_variants v
 WHERE o.order_number = 'unclaimed-order' AND v.weight_grams = 1000;
-INSERT INTO payments (order_id, method, amount_inr, status, attempt_key,
+INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key,
     paid_at, collected_by_staff_id, collected_at)
-SELECT o.id, 'CASH', 120, 'PAID', 'unclaimed-payment', now(), a.id, now()
+SELECT o.id, o.store_id, 'CASH', 120, 'PAID', 'unclaimed-payment', now(), a.id, now()
 FROM orders o JOIN staff_accounts a ON a.id = o.created_by_staff_id
 WHERE o.order_number = 'unclaimed-order';
 
 DO $checks$
+DECLARE
+    request_time timestamptz := now();
+    next_request timestamptz;
 BEGIN
     IF (SELECT count(*) FROM store_variant_offers) <> 3 THEN
         RAISE EXCEPTION 'Store offer counts differ';
@@ -92,6 +95,40 @@ BEGIN
     IF NOT FOUND THEN
         RAISE EXCEPTION 'OTP challenge was not consumed';
     END IF;
+
+    INSERT INTO otp_request_cooldowns (mobile, last_issued_at, next_request_at)
+    VALUES ('9876543210', request_time, request_time + interval '30 seconds')
+    RETURNING next_request_at INTO next_request;
+    IF next_request <> request_time + interval '30 seconds' THEN
+        RAISE EXCEPTION 'OTP cooldown was not recorded';
+    END IF;
+
+    INSERT INTO otp_request_cooldowns (mobile, last_issued_at, next_request_at)
+    VALUES ('9876543210', request_time + interval '29 seconds', request_time + interval '59 seconds')
+    ON CONFLICT (mobile) DO UPDATE SET last_issued_at = EXCLUDED.last_issued_at,
+        next_request_at = EXCLUDED.next_request_at
+    WHERE otp_request_cooldowns.next_request_at <= EXCLUDED.last_issued_at
+    RETURNING otp_request_cooldowns.next_request_at INTO next_request;
+    IF next_request IS NOT NULL THEN
+        RAISE EXCEPTION 'OTP resend before 30 seconds was accepted';
+    END IF;
+
+    INSERT INTO otp_request_cooldowns (mobile, last_issued_at, next_request_at)
+    VALUES ('9876543210', request_time + interval '30 seconds', request_time + interval '60 seconds')
+    ON CONFLICT (mobile) DO UPDATE SET last_issued_at = EXCLUDED.last_issued_at,
+        next_request_at = EXCLUDED.next_request_at
+    WHERE otp_request_cooldowns.next_request_at <= EXCLUDED.last_issued_at
+    RETURNING otp_request_cooldowns.next_request_at INTO next_request;
+    IF next_request <> request_time + interval '60 seconds' THEN
+        RAISE EXCEPTION 'OTP resend at 30 seconds was rejected';
+    END IF;
+
+    BEGIN
+        INSERT INTO otp_request_cooldowns (mobile, last_issued_at, next_request_at)
+        VALUES ('9876543211', request_time, request_time + interval '29 seconds');
+        RAISE EXCEPTION 'Short OTP cooldown was accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
 
     UPDATE payments SET status = 'PAID', paid_at = now(), provider_reference = 'provider-card-1'
     WHERE attempt_key = 'consumer-payment';
@@ -114,9 +151,44 @@ BEGIN
     UPDATE orders SET arrived_at = now(), arrival_recorded_by_staff_id =
         (SELECT id FROM staff_accounts WHERE login_name = 'First')
     WHERE order_number = 'first-order';
-    INSERT INTO ready_estimate_events (order_id, staff_id, estimated_ready_at, reason)
-    SELECT o.id, a.id, now() + interval '30 minutes', 'Arrival check-in'
+    INSERT INTO ready_estimate_events (order_id, store_id, staff_id, estimated_ready_at, reason)
+    SELECT o.id, o.store_id, a.id, now() + interval '30 minutes', 'Arrival check-in'
     FROM orders o JOIN staff_accounts a ON a.id = o.arrival_recorded_by_staff_id
+    WHERE o.order_number = 'first-order';
+
+    BEGIN
+        INSERT INTO ready_estimate_events (order_id, store_id, staff_id, estimated_ready_at, reason)
+        SELECT o.id, o.store_id, a.id, now() + interval '30 minutes', 'Wrong store'
+        FROM orders o CROSS JOIN staff_accounts a
+        WHERE o.order_number = 'first-order' AND a.login_name = 'Second';
+        RAISE EXCEPTION 'Cross-store ready estimate actor was accepted';
+    EXCEPTION WHEN foreign_key_violation THEN NULL;
+    END;
+
+    BEGIN
+        INSERT INTO order_status_events (order_id, store_id, from_status, to_status,
+            actor_type, actor_staff_id)
+        SELECT o.id, o.store_id, 'PLACED', 'ACCEPTED', 'STAFF', a.id
+        FROM orders o CROSS JOIN staff_accounts a
+        WHERE o.order_number = 'first-order' AND a.login_name = 'Second';
+        RAISE EXCEPTION 'Cross-store status actor was accepted';
+    EXCEPTION WHEN foreign_key_violation THEN NULL;
+    END;
+
+    BEGIN
+        INSERT INTO order_status_events (order_id, store_id, from_status, to_status,
+            actor_type, actor_customer_id)
+        SELECT o.id, o.store_id, 'PLACED', 'CANCELLED', 'CUSTOMER', c.id
+        FROM orders o CROSS JOIN customers c
+        WHERE o.order_number = 'second-order' AND c.mobile = '9876543211';
+        RAISE EXCEPTION 'Other customer status actor was accepted';
+    EXCEPTION WHEN foreign_key_violation THEN NULL;
+    END;
+
+    INSERT INTO order_status_events (order_id, store_id, from_status, to_status,
+        actor_type, actor_staff_id)
+    SELECT o.id, o.store_id, 'PLACED', 'ACCEPTED', 'STAFF', a.id
+    FROM orders o JOIN staff_accounts a ON a.id = o.created_by_staff_id
     WHERE o.order_number = 'first-order';
 
     BEGIN
@@ -142,10 +214,10 @@ BEGIN
     END;
 
     BEGIN
-        INSERT INTO payments (order_id, method, amount_inr, status, attempt_key,
+        INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key,
             paid_at, collected_by_staff_id, collected_at, refund_status,
             refund_amount_inr, refund_requested_at, refund_confirmed_at)
-        SELECT o.id, 'CASH', 120, 'PAID', 'cash-refund', now(), a.id, now(),
+        SELECT o.id, o.store_id, 'CASH', 120, 'PAID', 'cash-refund', now(), a.id, now(),
             'REFUNDED', 120, now(), now()
         FROM orders o JOIN staff_accounts a ON a.id = o.created_by_staff_id
         WHERE o.order_number = 'first-order';
@@ -154,36 +226,57 @@ BEGIN
     END;
 
     BEGIN
-        INSERT INTO payments (order_id, method, amount_inr, status, attempt_key,
+        INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key,
             paid_at, collected_by_staff_id, collected_at, refund_status)
-        SELECT o.id, 'CASH', 120, 'PAID', 'cash-refund', now(), a.id, now(), 'PENDING'
+        SELECT o.id, o.store_id, 'CASH', 120, 'PAID', 'cash-refund', now(), a.id, now(), 'PENDING'
         FROM orders o JOIN staff_accounts a ON a.id = o.created_by_staff_id
         WHERE o.order_number = 'first-order';
         RAISE EXCEPTION 'Pending refund without amount and request time was accepted';
     EXCEPTION WHEN check_violation THEN NULL;
     END;
 
-    INSERT INTO payments (order_id, method, amount_inr, status, attempt_key,
+    BEGIN
+        INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key,
+            paid_at, collected_by_staff_id, collected_at)
+        SELECT o.id, o.store_id, 'CASH', 120, 'PAID', 'wrong-staff-payment', now(), a.id, now()
+        FROM orders o CROSS JOIN staff_accounts a
+        WHERE o.order_number = 'first-order' AND a.login_name = 'Second';
+        RAISE EXCEPTION 'Cross-store cash collector was accepted';
+    EXCEPTION WHEN foreign_key_violation THEN NULL;
+    END;
+
+    BEGIN
+        INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key,
+            provider, expires_at)
+        SELECT o.id, s.id, 'UPI', 120, 'PENDING', 'wrong-store-payment',
+            'test-provider', now() + interval '5 minutes'
+        FROM orders o CROSS JOIN stores s
+        WHERE o.order_number = 'first-order' AND s.name = 'Second';
+        RAISE EXCEPTION 'Cross-store payment was accepted';
+    EXCEPTION WHEN foreign_key_violation THEN NULL;
+    END;
+
+    INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key,
         paid_at, collected_by_staff_id, collected_at, refund_status,
         refund_amount_inr, refund_requested_at, refund_confirmed_at, refunded_by_staff_id)
-    SELECT o.id, 'CASH', 120, 'PAID', 'cash-refund', now(), a.id, now(),
+    SELECT o.id, o.store_id, 'CASH', 120, 'PAID', 'cash-refund', now(), a.id, now(),
         'REFUNDED', 120, now(), now(), a.id
     FROM orders o JOIN staff_accounts a ON a.id = o.created_by_staff_id
     WHERE o.order_number = 'first-order';
 
     BEGIN
-        INSERT INTO payments (order_id, method, amount_inr, status, attempt_key,
+        INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key,
             provider, expires_at, paid_at)
-        SELECT id, 'UPI', 150, 'PAID', 'online-payment', 'test-provider',
+        SELECT id, store_id, 'UPI', 150, 'PAID', 'online-payment', 'test-provider',
             now() + interval '1 hour', now()
         FROM orders WHERE order_number = 'second-order';
         RAISE EXCEPTION 'Verified online payment without provider reference was accepted';
     EXCEPTION WHEN check_violation THEN NULL;
     END;
 
-    INSERT INTO payments (order_id, method, amount_inr, status, attempt_key,
+    INSERT INTO payments (order_id, store_id, method, amount_inr, status, attempt_key,
         provider, provider_reference, expires_at, paid_at)
-    SELECT id, 'UPI', 150, 'PAID', 'online-payment', 'test-provider',
+    SELECT id, store_id, 'UPI', 150, 'PAID', 'online-payment', 'test-provider',
         'provider-payment-1', now() + interval '1 hour', now()
     FROM orders WHERE order_number = 'second-order';
 
@@ -198,6 +291,19 @@ BEGIN
 
     INSERT INTO reward_reservations (order_id, customer_id, points, status, expires_at)
     SELECT id, customer_id, 5, 'HELD', now() + interval '5 minutes'
+    FROM orders WHERE order_number = 'second-order';
+
+    BEGIN
+        INSERT INTO marketing_choices (order_id, customer_id, opted_in, source)
+        SELECT o.id, c.id, true, 'STORE'
+        FROM orders o CROSS JOIN customers c
+        WHERE o.order_number = 'second-order' AND c.mobile = '9876543211';
+        RAISE EXCEPTION 'Marketing choice for another customer was accepted';
+    EXCEPTION WHEN foreign_key_violation THEN NULL;
+    END;
+
+    INSERT INTO marketing_choices (order_id, customer_id, opted_in, source)
+    SELECT id, customer_id, false, 'STORE'
     FROM orders WHERE order_number = 'second-order';
 
     BEGIN
