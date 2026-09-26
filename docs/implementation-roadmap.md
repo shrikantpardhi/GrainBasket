@@ -16,11 +16,11 @@ services/
 docs/                 v1.0 PRD, roadmap and implementation tasks
 ```
 
-Keep each application in its own folder and build it with native tooling; all three communicate through the API in `services/api/`, which alone connects to PostgreSQL. Add shared packages only when there is code to share, and add a future iOS consumer app under `apps/` when planned. The app folders are placeholders; the API folder holds [001](../services/api/migrations/001_phase1.sql), [002](../services/api/migrations/002_phase2_store_offers.sql) and [003](../services/api/migrations/003_v1_otp_and_store_audit.sql) migrations without application source yet. Apply all three in order on a fresh v1.0 database **before** creating either store and its offers.
+Keep each application in its own folder and build it with native tooling; all three communicate through the API in `services/api/`, which alone connects to PostgreSQL. Add shared packages only when there is code to share, and add a future iOS consumer app under `apps/` when planned. The admin React application and API foundation are implemented; the two Android folders remain placeholders. The API migration runner applies [001](../services/api/migrations/001_phase1.sql), [002](../services/api/migrations/002_phase2_store_offers.sql), [003](../services/api/migrations/003_v1_otp_and_store_audit.sql) and [004](../services/api/migrations/004_admin_claim_evidence.sql) before configuration. See the [local setup instructions](../README.md#run-the-admin-foundation-locally).
 
 ## 1. Admin web and shared foundation
 
-- Set up the Node.js API, apply both PostgreSQL migrations, and build the React admin app and secure HTTPS entrypoint. Implement admin sign-in, role checks, revocable sessions and private database access first.
+- Set up the Node.js API, apply all PostgreSQL migrations, and build the React admin app and secure HTTPS entrypoint. Implement admin sign-in, role checks, revocable sessions and private database access first.
 - Configure both stores independently: address/contact, daily hours, weekly closures, cutoff, pickup lead time/slots, delivery coverage/fee and ordering switch. Ordering remains disabled until the selected store is configured.
 - Add shared flour/rice catalog and three-language content, per-store variant offers with different prices/stock/active state, store-assigned staff accounts and configurable reward values. Make the admin panel usable in English, Hindi and Marathi.
 - **Ready for store work when:** admin can configure both stores, publish translated flour/rice offers with independent stock/prices, set reward values and create/deactivate staff in each store; unauthorized staff cannot change settings. Complete order/payment/refund screens in stage 2 when those records exist.

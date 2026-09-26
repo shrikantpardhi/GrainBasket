@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16.10
+    environment:
+      POSTGRES_DB: grainbasket
+      POSTGRES_USER: grainbasket
+      POSTGRES_PASSWORD: localdev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grainbasket -d grainbasket"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  api:
+    image: node:22-bookworm-slim
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - api_modules:/workspace/node_modules
+    environment:
+      DATABASE_URL: postgres://grainbasket:localdev@db:5432/grainbasket
+      SESSION_SECRET: local-development-only-secret-replace-in-production
+      PUBLIC_ORIGIN: http://localhost:5173
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npm ci && npm run db:migrate && npm run dev:api"
+  admin:
+    image: node:22-bookworm-slim
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - admin_modules:/workspace/node_modules
+    environment:
+      VITE_API_PROXY_TARGET: http://api:3000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    command: sh -c "npm ci && npm run dev:admin -- --host 0.0.0.0"
+volumes:
+  postgres_data:
+  api_modules:
+  admin_modules:

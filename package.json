@@ -1,0 +1,22 @@
+{
+  "name": "grainbasket",
+  "private": true,
+  "type": "module",
+  "workspaces": ["services/api", "apps/admin-web"],
+  "scripts": {
+    "dev:api": "npm run dev -w @grainbasket/api",
+    "dev:admin": "npm run dev -w @grainbasket/admin-web",
+    "db:migrate": "npm run migrate -w @grainbasket/api",
+    "db:bootstrap": "npm run bootstrap -w @grainbasket/api",
+    "build": "npm run build --workspaces",
+    "test": "npm run test -w @grainbasket/api",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "eslint services/api/src apps/admin-web/src"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "globals": "16.3.0",
+    "typescript-eslint": "8.35.1"
+  }
+}
