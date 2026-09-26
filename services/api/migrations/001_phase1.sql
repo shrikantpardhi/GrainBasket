@@ -62,6 +62,19 @@ CREATE TABLE customers (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE otp_challenges (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    mobile varchar(20) NOT NULL CHECK (btrim(mobile) <> ''),
+    code_digest text NOT NULL CHECK (btrim(code_digest) <> ''),
+    attempts integer NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    expires_at timestamptz NOT NULL,
+    consumed_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    CHECK (expires_at > created_at)
+);
+
+CREATE INDEX otp_challenges_mobile_created ON otp_challenges(mobile, created_at DESC);
+
 CREATE TABLE auth_sessions (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     staff_id bigint REFERENCES staff_accounts(id),
@@ -155,6 +168,7 @@ CREATE TABLE orders (
     flour_pickup_mode text CHECK (flour_pickup_mode IN ('IN_FRONT', 'IN_ADVANCE')),
     requested_pickup_at timestamptz,
     arrived_at timestamptz,
+    arrival_recorded_by_staff_id bigint REFERENCES staff_accounts(id),
     estimated_ready_at timestamptz,
     actual_ready_at timestamptz,
     status text NOT NULL CHECK (status IN (
@@ -172,6 +186,7 @@ CREATE TABLE orders (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CHECK (amount_due = item_subtotal + delivery_fee - points_value_inr),
+    CHECK ((arrived_at IS NULL) = (arrival_recorded_by_staff_id IS NULL)),
     CHECK (
         (source = 'CONSUMER' AND customer_id IS NOT NULL AND created_by_staff_id IS NULL)
         OR (source = 'STORE' AND created_by_staff_id IS NOT NULL)
@@ -196,6 +211,7 @@ CREATE TABLE orders (
 
 CREATE INDEX orders_store_status ON orders(store_id, status, created_at);
 CREATE INDEX orders_customer_created ON orders(customer_id, created_at DESC);
+ALTER TABLE orders ADD CONSTRAINT orders_id_customer_unique UNIQUE (id, customer_id);
 
 CREATE TABLE order_items (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -291,7 +307,8 @@ CREATE TABLE reward_reservations (
     points integer NOT NULL CHECK (points > 0),
     status text NOT NULL CHECK (status IN ('HELD', 'COMMITTED', 'RELEASED')),
     expires_at timestamptz NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now()
+    created_at timestamptz NOT NULL DEFAULT now(),
+    FOREIGN KEY (order_id, customer_id) REFERENCES orders(id, customer_id)
 );
 
 CREATE INDEX reward_reservations_customer_status ON reward_reservations(customer_id, status);
@@ -305,12 +322,16 @@ CREATE TABLE reward_transactions (
     points integer NOT NULL CHECK (points <> 0),
     action_key text NOT NULL UNIQUE CHECK (btrim(action_key) <> ''),
     reason text,
+    adjusted_by_staff_id bigint REFERENCES staff_accounts(id),
     created_at timestamptz NOT NULL DEFAULT now(),
     CHECK (customer_id IS NOT NULL OR (action = 'EARN' AND order_id IS NOT NULL)),
     CHECK (order_id IS NOT NULL OR action = 'ADJUST'),
-    CHECK (action <> 'ADJUST' OR (reason IS NOT NULL AND btrim(reason) <> '')),
+    CHECK (action <> 'ADJUST' OR (reason IS NOT NULL AND btrim(reason) <> ''
+        AND adjusted_by_staff_id IS NOT NULL)),
+    CHECK (action = 'ADJUST' OR adjusted_by_staff_id IS NULL),
     CHECK ((action IN ('EARN', 'RESTORE') AND points > 0)
-        OR (action = 'REDEEM' AND points < 0) OR action = 'ADJUST')
+        OR (action = 'REDEEM' AND points < 0) OR action = 'ADJUST'),
+    FOREIGN KEY (order_id, customer_id) REFERENCES orders(id, customer_id)
 );
 
 CREATE UNIQUE INDEX one_reward_action_per_order ON reward_transactions(order_id, action)

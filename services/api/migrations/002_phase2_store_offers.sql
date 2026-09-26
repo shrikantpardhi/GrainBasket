@@ -31,6 +31,10 @@ ALTER TABLE staff_accounts ADD CONSTRAINT staff_id_store_unique UNIQUE (id, stor
 
 ALTER TABLE orders ADD CONSTRAINT orders_creating_staff_store_fk
     FOREIGN KEY (created_by_staff_id, store_id) REFERENCES staff_accounts(id, store_id);
+ALTER TABLE orders ADD CONSTRAINT orders_arrival_staff_store_fk
+    FOREIGN KEY (arrival_recorded_by_staff_id, store_id) REFERENCES staff_accounts(id, store_id);
+ALTER TABLE reward_transactions ADD CONSTRAINT reward_transactions_order_store_fk
+    FOREIGN KEY (order_id, store_id) REFERENCES orders(id, store_id);
 
 ALTER TABLE order_items ADD COLUMN store_id bigint;
 UPDATE order_items AS items SET store_id = orders.store_id
