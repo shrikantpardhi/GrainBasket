@@ -18,6 +18,8 @@ Enable a **second Nagpur store** without mixing its orders, inventory or staff a
 
 Keep one backend and database unless measured scale calls for more. Add a store-offer/variant relationship for per-store price, stock and active status; keep product descriptions shared until store-specific content is truly needed. Reuse the existing order store reference and add store-aware uniqueness/authorization checks. No delivery partner application or complex tenant infrastructure is needed for a two-store pilot.
 
+The [Phase 2 migration](../services/api/migrations/002_phase2_store_offers.sql) moves Phase 1 variant price, stock and active status to the existing store's offers. It requires exactly one existing store when variants exist and must be deployed with API changes that use offers for quotes, stock reservations and adjustments. Add the second store and assign its offers only after migration; order snapshots and customer points remain shared as described above.
+
 ## Future iOS consumer app
 
 The future iOS consumer app will use the same backend API, customer accounts, catalog and order rules. Decide whether to share mobile code with Android when planning that app.

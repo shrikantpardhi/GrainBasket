@@ -2,6 +2,8 @@
 
 Build in this order: **admin web → store Android → consumer Android**. Each stage extends the same Node.js API and PostgreSQL database; no application connects directly to PostgreSQL. Follow the [Phase 1 scope](phase-1.md), [shared operations](operations.md) and the acceptance checks in each application specification. This is build sequence, not a change to the agreed launch scope: all three apps must work before Phase 1 opens to customers.
 
+The [implementation tasks](implementation-tasks.md) break each stage into concrete work and completion checks.
+
 ## Monorepo layout
 
 ```text
@@ -25,7 +27,7 @@ Keep each application in its own folder and build it with its native tooling; al
 
 ## 2. Store Android and order operations
 
-- Add authenticated staff APIs and the order, order-item, stock-reservation, status-event, payment, refund, reward and marketing-choice records in PostgreSQL. Implement server-calculated quotes, idempotent order submission and server-enforced store/order permissions.
+- Implement authenticated staff APIs against the initial order, order-item, stock-reservation, status-event, payment, refund, reward and marketing-choice records in PostgreSQL. Implement server-calculated quotes, idempotent order submission and server-enforced store/order permissions.
 - Build the Kotlin/Jetpack Compose store app for staff-entered pickup/delivery orders, customer name/mobile, optional marketing consent, cash collected at order entry and customer UPI/card payment. Choose the gateway during this stage; the backend verifies online payment and manages failed/expired attempts and refunds. Add mobile OTP verification for points redemption and claiming staff-order points.
 - Add the paid-order queue, flour grind-on-arrival or ready-at-selected-time preparation, updated ready estimates, stock adjustments, pickup/delivery transitions and manual cash refund recording. Complete the admin order/payment/refund views and cash reconciliation using the same backend records. Support English, Hindi and Marathi in the store app.
 - **Ready for consumer work when:** staff can place and fulfill a cash order and a provider-verified online order without the consumer app, handle both flour pickup modes, reconcile a cancellation/refund in admin, and see points credited only once at completion. Pending payments never enter the queue; repeat submissions and unauthorized status changes are rejected.
