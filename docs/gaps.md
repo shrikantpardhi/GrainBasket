@@ -6,7 +6,7 @@ This reviews the seven original root-level specifications on `shrikantpardhi-pat
 
 | Original documents | Conflict or missing link | Phase 1 treatment |
 | --- | --- | --- |
-| `PRD-v1.0.md` vs `ConsumerPRD-v1.0.md`, `StorePRD-v1.0.md`, `AdminPRD-v1.0.md` | Spring Boot vs Node.js backend; no common application boundary | One backend and PostgreSQL database, with separate Android consumer/store apps and web admin. Framework decision remains open. |
+| `PRD-v1.0.md` vs `ConsumerPRD-v1.0.md`, `StorePRD-v1.0.md`, `AdminPRD-v1.0.md` | Spring Boot vs Node.js backend; no common application boundary | Node.js backend, PostgreSQL, Kotlin/Jetpack Compose consumer and store Android apps, React web admin. The exact Node.js framework remains open. |
 | `PRD-v1.0.md`, `Database-v1.0.md` vs `ConsumerPRD-v1.0.md` | Delivery address needed at checkout, but `USER_ADDRESSES` is marked Phase 2 | Capture a delivery address on each order in Phase 1; defer an address book. |
 | `PRD-v1.0.md`, `Database-v1.0.md` | Store pricing, coupons and banners assume multiple stores despite one-store MVP | Keep a store reference for orders; postpone coupons, banners and per-store overrides. |
 | `StorePRD-v1.0.md`, `DeliveryStatusPRD-v1.0.md`, `Database-v1.0.md` | Different status paths; database omits pickup completion, cancellation reason and event history | One pickup/delivery lifecycle and a status event with actor/time. `COLLECTED` closes pickup; `DELIVERED` closes delivery. |
@@ -32,7 +32,7 @@ The product owner confirmed the core launch scope above. Coupons, banners, saved
 | **Before launch** | OTP sender, cost and abuse limits are unspecified. | Choose provider and message template; set expiry, retries and rate limits. | Product/engineering |
 | **Before launch** | Cancellation, rejected orders, failed delivery, returns and paid-order refund policy are missing. | Publish support policy; allow consumer-app cancellation before acceptance and staff cancellation before handover with reason. Track provider refunds for online payments and confirmed manual returns for staff-collected cash. | Business/operations |
 | **Before launch** | Personal data handling and operational security are unspecified. | Approve privacy text, retention/deletion policy, staff access, backup/restore and HTTPS entrypoint. | Business/engineering |
-| **Before launch** | The tech stack differs across the old PRDs. | Choose one backend language/framework and hosting/TLS arrangement; use a reverse proxy where hosting does not already cover TLS/routing. | Engineering |
+| **Before build** | Node.js is confirmed, but its framework and the hosting/TLS arrangement are unspecified. | Choose a Node.js framework and deployment arrangement; use a reverse proxy where hosting does not already cover TLS/routing. | Engineering |
 | **During build** | Variant vs grind inventory, stock races, price changes, duplicate charges/cash receipts and past-order integrity are undefined. | Use variant stock and order-item grind; atomic expiring online reservation, atomic cash order/receipt creation, explicit quote confirmation, idempotent submit and item snapshots. | Engineering/store |
 | **During build** | How customers learn order progress is vague (“live notifications” promised). | Show status on refresh; set support contact on order details. Add push only after operational reliability is proven. | Product/store |
 

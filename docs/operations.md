@@ -1,6 +1,6 @@
 # Phase 1 operations and technical design
 
-This is the minimum shared model for the [Phase 1 business specification](phase-1.md) and its separate [consumer](consumer.md), [store](store.md) and [admin](admin.md) applications. It is a design guide, not executable SQL or a commitment to a specific framework.
+This is the minimum shared model for the [Phase 1 business specification](phase-1.md) and its separate [consumer](consumer.md), [store](store.md) and [admin](admin.md) applications. It is a design guide, not executable SQL or a choice of specific Node.js framework.
 
 ## Order lifecycle
 
@@ -69,7 +69,7 @@ Restrict personal data and reward balances by role and ownership. Each app calls
 
 ## Deployment and security baseline
 
-- One API serving the consumer Android app, store Android app and admin web panel, with one PostgreSQL database on a private network. `PRD-v1.0.md` proposes Java/Spring while the app PRDs propose Node.js. Pick **one** before implementation; Node.js is a working assumption, not an approved choice.
+- Confirmed stack: one Node.js API, a React admin web panel, separate consumer and store Android apps built with Kotlin/Jetpack Compose, and one PostgreSQL database on a private network. Only the API connects to PostgreSQL. Select the Node.js framework and hosting details during implementation; the older Java/Spring proposal is superseded.
 - Expose only the public API/web entrypoint over HTTPS. A reverse proxy can terminate TLS, route web/API traffic and enforce request-size limits where needed; keep the backend and database unreachable from the public internet. Do not add a proxy solely to introduce another service if the host already provides these controls.
 - Phone OTP must use an approved provider, short expiry and request/verification limits; do not log codes. Staff/admin passwords are hashed, sessions are revocable, and role/store permissions are checked on the server. Admin web sessions use secure, HttpOnly cookies with appropriate SameSite and CSRF protection; Android credentials use secure device storage and short-lived server-issued tokens.
 - Validate and authorize every order/reward read/write; never trust client totals, points balances, statuses, online payment outcomes or role claims. Limit cash-paid order creation to authenticated staff, record their identity, and reconcile cash receipts and refunds. Verify provider callbacks server-side, limit login and checkout abuse, use parameterized database access, store secrets outside source control and avoid phone/address details in application logs. Send marketing only to customers with recorded opt-in; allow them to withdraw it without affecting orders or points.

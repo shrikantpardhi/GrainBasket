@@ -30,4 +30,4 @@ These are candidate **increments**, not prerequisites for adding the second stor
 
 ## Still later
 
-Delivery partner assignment/app, loyalty tiers/campaigns, wishlist, reviews, subscriptions, franchise/multi-city operations, B2B, and new on-demand snack production need their own business case and operating model. Additional stocked categories can be added through the catalog when content and supply are ready; they do not require a new phase-wide feature.
+A future iOS consumer app will use the same backend API, PostgreSQL-backed accounts, catalog and order rules; its mobile-code sharing approach is still to be confirmed and is not part of the second-store pilot. Delivery partner assignment/app, loyalty tiers/campaigns, wishlist, reviews, subscriptions, franchise/multi-city operations, B2B, and new on-demand snack production need their own business case and operating model. Additional stocked categories can be added through the catalog when content and supply are ready; they do not require a new phase-wide feature.

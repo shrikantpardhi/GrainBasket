@@ -1,6 +1,6 @@
 # Phase 1 consumer application specification
 
-**Platform:** Android. This app follows the [Phase 1 business scope](phase-1.md); common order/payment and data rules are in [Operations](operations.md). It uses the shared backend API, not a direct database connection.
+**Platform:** Android, Kotlin with Jetpack Compose. This app follows the [Phase 1 business scope](phase-1.md); common order/payment and data rules are in [Operations](operations.md). It uses the shared Node.js backend API, not a direct database connection.
 
 ## Customer flow
 

@@ -8,7 +8,7 @@ GrainBasket starts with one store in Nagpur: customers order freshly milled flou
 | [Consumer Android](docs/consumer.md) | Browse, checkout, payment and order tracking acceptance checks. |
 | [Store Android](docs/store.md) | Staff order entry, cash/online payment, paid order queue, preparation, handover and stock checks. |
 | [Admin web](docs/admin.md) | Store, catalog, translations, accounts and refund acceptance checks. |
-| [Shared operations and data](docs/operations.md) | Fulfillment/payment rules, one database and security baseline. |
+| [Shared operations and data](docs/operations.md) | Fulfillment/payment rules, confirmed technology stack, one database and security baseline. |
 | [Phase 2 specification](docs/phase-2.md) | Second-store expansion, entry criteria and optional improvements. |
 | [Gaps and roadmap](docs/gaps.md) | Conflicts found in the original specifications, open business decisions and later phases. |
 

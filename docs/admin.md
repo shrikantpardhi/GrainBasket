@@ -1,6 +1,6 @@
 # Phase 1 admin application specification
 
-**Platform:** Web panel for the one Nagpur store. It is separate from the [store Android app](store.md), uses the same backend and database as the [consumer app](consumer.md), and never exposes database credentials in the browser.
+**Platform:** React web panel for the one Nagpur store. It is separate from the [store Android app](store.md), uses the same Node.js backend and PostgreSQL database as the [consumer app](consumer.md), and never exposes database credentials in the browser.
 
 ## Admin flow
 

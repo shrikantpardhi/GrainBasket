@@ -1,6 +1,6 @@
 # Phase 1 store application specification
 
-**Platform:** Android for the one Nagpur store. This is a separate staff app using the same authorized backend and database as the [consumer](consumer.md) and [admin](admin.md) apps; staff never connect to PostgreSQL directly.
+**Platform:** Android, Kotlin with Jetpack Compose, for the one Nagpur store. This is a separate staff app using the same authorized Node.js backend and database as the [consumer](consumer.md) and [admin](admin.md) apps; staff never connect to PostgreSQL directly.
 
 ## Staff flow
 
