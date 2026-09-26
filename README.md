@@ -1,6 +1,6 @@
 # GrainBasket product documents
 
-GrainBasket starts with one store in Nagpur: customers order freshly milled flour and other staple foods for pickup or local delivery. These documents describe a deliberately small first release, not a finished application or database migration.
+GrainBasket starts with one store in Nagpur: customers order freshly milled flour and rice for pickup or local delivery. These documents are the agreed Phase 1 scope and the defined Phase 2 plan. Exact operating values and policies still needed before launch are tracked in [Gaps and roadmap](docs/gaps.md).
 
 | Read | Purpose |
 | --- | --- |

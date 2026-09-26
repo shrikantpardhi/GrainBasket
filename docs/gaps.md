@@ -1,6 +1,6 @@
 # Gaps, decisions and roadmap
 
-This reviews the seven original root-level specifications on `shrikantpardhi-patch-1` against the product owner's clarified [Phase 1](phase-1.md): one Nagpur store, flour/rice and two flour pickup choices, English/Hindi/Marathi, consumer UPI/card payments, staff-entered cash/online orders, purchase reward points, and separate consumer/store/admin apps sharing one backend and database. [Phase 2](phase-2.md) proposes the second-store pilot. **Open** means an implementation or operating decision still needs an owner before launch.
+This reviews the seven original root-level specifications on `shrikantpardhi-patch-1` against the product owner's confirmed [Phase 1](phase-1.md): one Nagpur store, flour/rice and two flour pickup choices, English/Hindi/Marathi, consumer UPI/card payments, staff-entered cash/online orders, purchase reward points, and separate consumer/store/admin apps sharing one backend and database. [Phase 2](phase-2.md) defines a second-store pilot for a later rollout decision. The Phase 1 scope is settled; the open items below are configuration values, policies or implementation choices that must be confirmed at the indicated stage.
 
 ## Contradictions resolved in the revised specification
 
@@ -19,7 +19,7 @@ The product owner confirmed the core launch scope above. Coupons, banners, saved
 
 | Priority | Gap / consequence | Proposed small first step | Owner to confirm |
 | --- | --- | --- | --- |
-| **Before launch** | Daily store opening/closing times, order cutoff, capacity and delivery area are unspecified; customers may order when the store cannot fulfill. | Confirm local opening/closing hours, cutoff and supported pincodes; display hours and reject orders outside the confirmed rules. | Store owner |
+| **Before launch** | Daily store opening/closing times, weekly closed days, order cutoff, capacity and delivery area are unspecified; customers may order when the store cannot fulfill. | Confirm local opening/closing hours, closed days, cutoff and supported pincodes; display hours and reject orders outside the confirmed rules. | Store owner |
 | **Before launch** | Flour pickup choices require realistic arrival waits and available ready-in-advance times. | Confirm whether 30 minutes after arrival is a sustainable baseline, preparation lead time and pickup availability. Show delayed estimates in the store queue and consumer app; do not promise an exact queue position. | Store owner |
 | **Before launch** | Delivery fee, minimum order and delivery fulfillment expectations are unspecified. | Confirm one flat fee, any minimum and who delivers; show fee before payment. | Store owner |
 | **Before launch** | UPI/card gateway, fees, settlement, refund timing, failure/timeout behavior and support ownership are unspecified. | Choose the gateway during implementation and confirm supported UPI/card flows for both apps; agree reservation expiry, late-success refunds, cancellation refund process and daily reconciliation. No specific provider is required in this specification. | Business/engineering |
@@ -42,7 +42,7 @@ The open decisions do not change the confirmed three apps, languages, online pay
 
 1. **Phase 1: validate one Nagpur store.** Three apps, three languages, flour/rice, two flour pickup modes with queue estimates, pickup/delivery, consumer phone checkout, staff-entered cash/online orders, verified UPI/card payments, purchase points, refunds and order statuses.
 2. **Phase 2: expand the proven journey.** Add a second Nagpur store with store-specific catalog, inventory, delivery and staff permissions. Consider saved addresses, promotions and richer notifications separately. See the [Phase 2 specification](phase-2.md).
-3. **Later:** Delivery partner app, other cities, loyalty tiers/campaigns, reviews, subscriptions, new prepared products and B2B sales need separate operating plans.
+3. **Later:** An iOS consumer app shares the backend API and customer data; decide its mobile-code strategy when planning it. Delivery partner app, other cities, loyalty tiers/campaigns, reviews, subscriptions, new prepared products and B2B sales need separate operating plans.
 
 ## Source coverage
 

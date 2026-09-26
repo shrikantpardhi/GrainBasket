@@ -1,6 +1,6 @@
 # Phase 2 business and product specification
 
-**Status:** Proposed next phase, not a commitment to build every listed feature. Phase 1 remains the [source of truth](phase-1.md) for the first release.
+**Status:** Defined scope for a second-store pilot after the [Phase 1](phase-1.md) entry criteria are met. Its rollout needs a separate decision; optional improvements below are not part of the pilot.
 
 ## Goal and entry criteria
 
@@ -30,4 +30,4 @@ These are candidate **increments**, not prerequisites for adding the second stor
 
 ## Still later
 
-A future iOS consumer app will use the same backend API, PostgreSQL-backed accounts, catalog and order rules; its mobile-code sharing approach is still to be confirmed and is not part of the second-store pilot. Delivery partner assignment/app, loyalty tiers/campaigns, wishlist, reviews, subscriptions, franchise/multi-city operations, B2B, and new on-demand snack production need their own business case and operating model. Additional stocked categories can be added through the catalog when content and supply are ready; they do not require a new phase-wide feature.
+A future iOS consumer app will use the same backend API, customer accounts, catalog and order rules; decide whether to share mobile code with Android when planning that app. Delivery partner assignment/app, loyalty tiers/campaigns, wishlist, reviews, subscriptions, franchise/multi-city operations, B2B, and new on-demand snack production need their own business case and operating model. Additional stocked categories can be added through the catalog when content and supply are ready; they do not require a new phase-wide feature.

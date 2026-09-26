@@ -51,7 +51,7 @@ PLACED → CANCELLED (customer before acceptance)
 
 | Record | Required fields or relationships |
 | --- | --- |
-| Store | Name, address, contact, daily opening/closing times and order cutoff in Nagpur local time, enabled delivery pincodes, flat delivery charge, active status/temporary closure. One store in Phase 1. |
+| Store | Name, address, contact, opening/closing times and closed days plus order cutoff in Nagpur local time, enabled delivery pincodes, flat delivery charge, active status/temporary closure. One store in Phase 1. |
 | Customer | ID, verified mobile, name and points balance derived from reward transactions. |
 | Staff account | ID, store, role (`ADMIN` or `STAFF`), password hash, active status. |
 | Product/category | English product name/description, category, image reference, flour/rice type, active status. Only verified claims displayed. |
