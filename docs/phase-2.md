@@ -1,10 +1,10 @@
 # Phase 2 business and product specification
 
-**Status:** Defined scope for a second-store pilot after the [Phase 1](phase-1.md) entry criteria are met. Its rollout needs a separate decision; optional improvements below are not part of the pilot.
+**Status:** Defined scope for a second-store pilot after the [Phase 1](phase-1.md) entry criteria are met. Its rollout needs a separate decision.
 
 ## Goal and entry criteria
 
-Enable a **second Nagpur store** without mixing its orders, inventory or staff access with the first store. Start this phase only after the first store can routinely accept and fulfill both pickup and delivery orders, admin can reconcile online and staff-collected cash payments/refunds, and the open launch policies in [Gaps and roadmap](gaps.md) have owners and answers. Use Phase 1 order completion, payment failures, cancellation reasons and customer feedback to decide the order of improvements.
+Enable a **second Nagpur store** without mixing its orders, inventory or staff access with the first store. Start this phase only after the first store can routinely accept and fulfill both pickup and delivery orders and admin can reconcile online and staff-collected cash payments/refunds. Use Phase 1 order completion, payment failures, cancellation reasons and customer feedback to decide the order of improvements.
 
 ## Core scope: second-store pilot
 
@@ -18,16 +18,6 @@ Enable a **second Nagpur store** without mixing its orders, inventory or staff a
 
 Keep one backend and database unless measured scale calls for more. Add a store-offer/variant relationship for per-store price, stock and active status; keep product descriptions shared until store-specific content is truly needed. Reuse the existing order store reference and add store-aware uniqueness/authorization checks. No delivery partner application or complex tenant infrastructure is needed for a two-store pilot.
 
-## Separate improvements to prioritize after the pilot
+## Future iOS consumer app
 
-These are candidate **increments**, not prerequisites for adding the second store. Approve one at a time from measured customer/store friction. English, Hindi, Marathi, UPI/card payments, staff-collected cash orders and basic purchase points are already required in Phase 1.
-
-| Candidate | Minimum useful version | Decision and acceptance condition |
-| --- | --- | --- |
-| Saved delivery addresses | Customer can save/edit/remove addresses and choose one at checkout; copy it to the order. | Confirm privacy/retention policy. Changing a saved address never alters a submitted order. |
-| Coupons or banners | One store-scoped promotion at a time, with admin-controlled dates/eligibility and a final price shown before confirmation. | Show evidence promotions help conversion. Expired or ineligible offers cannot change an already confirmed order; avoid building a general rules engine. |
-| Customer updates | Add a notification channel only if customers miss meaningful status changes on refresh. | Choose delivery channel/cost and consent; failed notification must not change order state. |
-
-## Still later
-
-A future iOS consumer app will use the same backend API, customer accounts, catalog and order rules; decide whether to share mobile code with Android when planning that app. Delivery partner assignment/app, loyalty tiers/campaigns, wishlist, reviews, subscriptions, franchise/multi-city operations, B2B, and new on-demand snack production need their own business case and operating model. Additional stocked categories can be added through the catalog when content and supply are ready; they do not require a new phase-wide feature.
+The future iOS consumer app will use the same backend API, customer accounts, catalog and order rules. Decide whether to share mobile code with Android when planning that app.

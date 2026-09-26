@@ -1,6 +1,6 @@
 # Phase 1 business specification
 
-**Status:** Final Phase 1 scope baseline confirmed by the product owner: one Nagpur store, three applications, English/Hindi/Marathi, flour and rice, UPI/card payments, staff-entered cash/online orders, flour pickup timing, and points earned on completed purchases with a minimum balance for redemption. Operating values, reward settings and gateway selection must be settled before launch as listed in [Gaps and roadmap](gaps.md).
+**Status:** Final Phase 1 scope confirmed by the product owner: one Nagpur store, three applications, English/Hindi/Marathi, flour and rice, UPI/card payments, staff-entered cash/online orders, flour pickup timing, and points earned on completed purchases with a minimum balance for redemption. Admin configures operating hours and reward values; the payment gateway is selected during implementation.
 
 ## Why this exists
 
@@ -39,4 +39,4 @@ Track weekly: orders by consumer/staff source and online/cash method, payment at
 
 ## Out of scope until later
 
-Multi-store discovery, other cities, delivery partner app, cash on delivery/pickup, coupons, banners, loyalty tiers, reviews, subscriptions, healthy snack production, saved addresses and advanced reports. See [Phase 2](phase-2.md) and [Gaps and roadmap](gaps.md) for sequencing and unresolved policies.
+Multi-store discovery, other cities, delivery partner app, cash on delivery/pickup, coupons, banners, loyalty tiers, reviews, subscriptions, healthy snack production, saved addresses and advanced reports. See [Phase 2](phase-2.md) for the second-store pilot.
