@@ -1,0 +1,9 @@
+{
+  "extends": "@grain-basket/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "prisma/**/*.ts", "prisma.config.ts"],
+  "exclude": ["src/generated/**"]
+}
