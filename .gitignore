@@ -1,0 +1,25 @@
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+.next-docs/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# prisma generated client
+packages/db/src/generated/
+
+# local uploads
+uploads/
+
+.DS_Store
+Thumbs.db
+*.log
+.claude/settings.local.json

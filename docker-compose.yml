@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: grain-basket-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: grain
+      POSTGRES_PASSWORD: grain
+      POSTGRES_DB: grain_basket
+    ports:
+      - "5433:5432"
+    volumes:
+      - grain-basket-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grain -d grain_basket"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  grain-basket-pgdata:

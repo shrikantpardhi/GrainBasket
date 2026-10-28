@@ -1,0 +1,24 @@
+{
+  "name": "@grain-basket/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./pricing": "./src/pricing/index.ts",
+    "./state": "./src/state/index.ts",
+    "./milling": "./src/milling/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@grain-basket/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@grain-basket/tsconfig": "workspace:*",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

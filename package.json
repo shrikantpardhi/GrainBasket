@@ -1,0 +1,29 @@
+{
+  "name": "grain-basket",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @grain-basket/db generate",
+    "db:migrate": "pnpm --filter @grain-basket/db migrate",
+    "db:push": "pnpm --filter @grain-basket/db push",
+    "db:seed": "pnpm --filter @grain-basket/db seed",
+    "db:studio": "pnpm --filter @grain-basket/db studio"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "tsx": "4.23.15",
+    "turbo": "2.11.10",
+    "typescript": "5.9.3"
+  }
+}
