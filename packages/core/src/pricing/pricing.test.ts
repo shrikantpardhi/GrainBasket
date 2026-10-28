@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { priceOrder, evaluateCoupon, type PricedLineInput, type TaxRule } from "./index";
+import {
+  priceOrder,
+  evaluateCoupon,
+  type CouponEligibilityInput,
+  type PricedLineInput,
+  type TaxRule,
+} from "./index";
 
 const GST5: TaxRule = { gstBps: 500, taxInclusive: true };
 
@@ -276,7 +282,9 @@ describe("priceOrder — tax and delivery", () => {
 });
 
 describe("evaluateCoupon", () => {
-  const base = {
+  // Annotated so `null` stays "nullable field" rather than widening to the
+  // literal type null, which would reject a Date in the overrides.
+  const base: CouponEligibilityInput["coupon"] = {
     isActive: true,
     startsAt: null,
     endsAt: null,

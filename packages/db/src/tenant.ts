@@ -98,10 +98,47 @@ export const GLOBAL_SHARED_MODELS: Record<string, string> = {
   AuditLog: "shopId",
 };
 
+/**
+ * What a logged-out visitor may read. An allowlist, deliberately: a new private
+ * model is denied without anyone remembering to add it here. Public catalogue
+ * browsing is the entire storefront surface for someone with no session.
+ *
+ * `Shop` has no `shopId` column (its primary key IS the tenant key), so it is
+ * handled by a separate id filter — see ID_FILTERED.
+ */
+const PUBLIC_ALLOWED = new Set<string>([
+  "Shop",
+  "ShopTranslation",
+  "ShopSettings",
+  "ServiceableArea",
+  "Category",
+  "CategoryTranslation",
+  "Product",
+  "ProductTranslation",
+  "ProductVariant",
+  "GrindOption",
+  "ProductGrindOption",
+  "Banner",
+  "Promotion",
+  "Coupon",
+  "DeliverySlot",
+]);
+
+/**
+ * Models keyed by a column other than `shopId` that still must be narrowed.
+ * `Shop` is public but a scoped visitor should only reach the shop(s) in their
+ * scope; `Customer` is keyed by its own id, so a customer scope filters on
+ * `id` rather than inventing a `customerId` column that would be null for
+ * self.
+ */
+const ID_FILTERED: Record<string, string> = {
+  Shop: "id",
+  Customer: "id",
+};
+
 /** Models a customer scope may never touch, regardless of query. */
 const PLATFORM_OR_STORE_ONLY = new Set<string>([
   "ShopSettings",
-  "ServiceableArea",
   "StockLedger",
   "Shift",
   "CashCollection",
@@ -113,15 +150,28 @@ const PLATFORM_OR_STORE_ONLY = new Set<string>([
   "StoreSession",
 ]);
 
-/** Models a STORE scope may never touch — platform identity & audit. */
+/** Models only a PLATFORM scope may touch — identity internals & audit. */
 const PLATFORM_ONLY = new Set<string>([
   "PlatformUser",
   "PlatformSession",
   "PlatformInvite",
+  "OtpChallenge",
   "AuditLog",
   "SupportGrant",
   "WebhookEvent",
 ]);
+
+/**
+ * Models no user-facing scope may read directly.
+ *
+ * `Customer` and `Address` are here because they have no `shopId`: without a
+ * deny, a STORE or PUBLIC scope would reach every customer's phone number and
+ * home address. Orders carry `contactName`/`contactPhone`/`addressSnapshot`
+ * precisely so the storefront and back office never need the live rows.
+ * Customers reach their own through the CUSTOMER branch below, which pins them
+ * by id.
+ */
+const NEVER_UNSCOPED = new Set<string>(["Customer", "Address"]);
 
 const READ_OPERATIONS = new Set([
   "findUnique",
@@ -143,6 +193,13 @@ const WRITE_WHERE_OPERATIONS = new Set([
 ]);
 
 const CREATE_OPERATIONS = new Set(["create", "createMany", "createManyAndReturn"]);
+
+/**
+ * `findUnique` takes only unique fields, so a scope filter cannot simply be
+ * added to its where — but with the extended client an extra field may be
+ * ANDed in, and the key must be preserved rather than overwritten.
+ */
+const UNIQUE_LOOKUPS = new Set(["findUnique", "findUniqueOrThrow"]);
 
 export interface TenantExtensionOptions {
   /**
@@ -171,12 +228,36 @@ export function tenantExtension(options: TenantExtensionOptions = {}) {
             const tenantField = TENANT_MODELS[model as TenantModel];
             const isCustomerModel = model in CUSTOMER_MODELS;
             const isGlobalShared = model in GLOBAL_SHARED_MODELS;
+            const idField = ID_FILTERED[model];
 
-            if (!tenantField && !isCustomerModel && !isGlobalShared) {
+            if (!tenantField && !isCustomerModel && !isGlobalShared && !idField) {
               // Not tenant-scoped. Still enforce universe boundaries so a
               // customer can't read the platform user table by accident.
               enforceUniverse(model, operation);
               return query(args);
+            }
+
+            if (idField) {
+              // Keyed by something other than shopId/customerId — `Shop` (its
+              // PK is the tenant key) and a customer's own `Customer` row.
+              const scope = requireScope(model, operation);
+              enforceUniverse(model, operation, scope);
+              const scoped = applyIdFilter(
+                model,
+                operation,
+                args as Record<string, unknown>,
+                scope,
+                idField,
+              );
+              // A `whereUnique` out of scope cannot be expressed as a filter,
+              // so the query must not run at all.
+              if (scoped === DENY) {
+                if (operation === "findUniqueOrThrow" || operation.endsWith("OrThrow")) {
+                  throw new AppError(ERROR_CODES.NOT_FOUND, `${model} not found`);
+                }
+                return null;
+              }
+              return query(scoped);
             }
 
             const scope = requireScope(model, operation);
@@ -209,13 +290,146 @@ function enforceUniverse(model: string, operation: string, scope?: Scope): void 
   const active = scope ?? getScope();
   if (!active) return;
 
-  if (active.kind === "CUSTOMER" && PLATFORM_OR_STORE_ONLY.has(model)) {
-    throw new AppError(ERROR_CODES.FORBIDDEN, `Customer scope may not access ${model}`);
-  }
-  if (active.kind === "STORE" && PLATFORM_ONLY.has(model)) {
-    throw new AppError(ERROR_CODES.FORBIDDEN, `Store scope may not access ${model}`);
+  switch (active.kind) {
+    case "PLATFORM":
+      return;
+
+    case "SYSTEM":
+      // Background jobs act on behalf of no user. They still may not read
+      // identity internals — a cron or webhook has no business seeing a
+      // customer's phone number directly.
+      if (PLATFORM_ONLY.has(model) || NEVER_UNSCOPED.has(model)) {
+        throw new AppError(
+          ERROR_CODES.FORBIDDEN,
+          `SYSTEM job "${active.job}" may not access ${model}`,
+        );
+      }
+      return;
+
+    case "STORE":
+      if (PLATFORM_ONLY.has(model) || NEVER_UNSCOPED.has(model)) {
+        throw new AppError(
+          ERROR_CODES.FORBIDDEN,
+          `Store scope may not access ${model}; use the order snapshot instead`,
+        );
+      }
+      return;
+
+    case "CUSTOMER":
+      // A customer reads the public catalogue plus their own rows. A shop's
+      // delivery fees and minimum order are public — checkout cannot work
+      // without them — so they stay readable, unlike stock levels or settings.
+      if (
+        (PLATFORM_OR_STORE_ONLY.has(model) || PLATFORM_ONLY.has(model)) &&
+        !PUBLIC_ALLOWED.has(model)
+      ) {
+        throw new AppError(ERROR_CODES.FORBIDDEN, `Customer scope may not access ${model}`);
+      }
+      // Being readable on the storefront is not a licence to write. The
+      // catalogue, banners, coupons and shop settings are all in
+      // PUBLIC_ALLOWED, and without this a customer could reprice a product
+      // or mint themselves a coupon. A customer's own writes land on Cart,
+      // Order, Address, Subscription and CouponRedemption — none of which are
+      // storefront-readable — so nothing legitimate is denied here.
+      if (PUBLIC_ALLOWED.has(model) && !READ_OPERATIONS.has(operation)) {
+        throw new AppError(
+          ERROR_CODES.FORBIDDEN,
+          `Customer scope may not ${operation} ${model}`,
+        );
+      }
+      return;
+
+    case "PUBLIC":
+      if (!PUBLIC_ALLOWED.has(model)) {
+        throw new AppError(
+          ERROR_CODES.FORBIDDEN,
+          `A signed-out visitor may not access ${model}`,
+        );
+      }
+      // Signed-out means read-only. A browse endpoint must never be able to
+      // write, even to a model it is allowed to read.
+      if (!READ_OPERATIONS.has(operation)) {
+        throw new AppError(
+          ERROR_CODES.FORBIDDEN,
+          `A signed-out visitor may not ${operation} ${model}`,
+        );
+      }
+      return;
   }
   void operation;
+}
+
+/**
+ * Narrow a model that is keyed by neither `shopId` nor `customerId`.
+ *
+ *   Shop      -> the shop ids in scope (its `id` IS the tenant key)
+ *   Customer  -> a customer scope sees only itself; other scopes are already
+ *                denied by NEVER_UNSCOPED, so this branch is CUSTOMER-only.
+ */
+function applyIdFilter(
+  model: string,
+  operation: string,
+  args: Record<string, unknown>,
+  scope: Scope,
+  idField: string,
+): Record<string, unknown> | typeof DENY {
+  const next = { ...args };
+  const isUniqueLookup = UNIQUE_LOOKUPS.has(operation);
+
+  if (READ_OPERATIONS.has(operation) || WRITE_WHERE_OPERATIONS.has(operation)) {
+    const condition = idFilterCondition(model, scope, idField);
+    if (condition === null) {
+      // Platform scope: no restriction.
+    } else if (condition === DENY) {
+      // Only a customer scope reaches the Customer branch; anything else has
+      // already been rejected upstream.
+      if (isUniqueLookup) return DENY;
+      next.where = withFieldFilter(next.where, idField, DENY);
+    } else if (isUniqueLookup) {
+      // `whereUnique` accepts only unique fields, so there is nowhere to add a
+      // scope filter. Compare the key the caller asked for instead of
+      // overwriting it — overwriting would return a DIFFERENT row than the one
+      // requested, a leak that reads as a successful lookup.
+      const requested = (next.where as Record<string, unknown> | undefined)?.[idField];
+      if (!matchesCondition(requested, condition)) return DENY;
+    } else {
+      next.where = withFieldFilter(next.where, idField, condition);
+    }
+  }
+  return next;
+}
+
+function matchesCondition(
+  requested: unknown,
+  condition: string | { in: string[] },
+): boolean {
+  // A compound or non-id key cannot be proven in scope without a query; let
+  // the SQL filter decide (Prisma will reject a key with no matching columns).
+  if (typeof requested !== "string") return true;
+  return typeof condition === "string" ? requested === condition : condition.in.includes(requested);
+}
+
+/** Marker meaning "this scope may see no row at all". */
+const DENY = "__DENY__" as const;
+
+/**
+ * The value `idField` must equal for this scope, or `null` for unrestricted.
+ */
+function idFilterCondition(
+  model: string,
+  scope: Scope,
+  idField: string,
+): string | { in: string[] } | typeof DENY | null {
+  if (model === "Customer") {
+    // Only a customer scope reaches here — other scopes are denied upstream.
+    return scope.kind === "CUSTOMER" ? scope.customerId : DENY;
+  }
+
+  const shopIds = allowedShopIds(scope);
+  if (shopIds === null) return null; // platform
+  const only = shopIds[0];
+  if (shopIds.length === 1 && only) return only;
+  return { in: [...shopIds] };
 }
 
 function applyScope(
@@ -234,18 +448,19 @@ function applyScope(
   /* ---------------- reads & where-based writes ---------------- */
 
   if (READ_OPERATIONS.has(operation) || WRITE_WHERE_OPERATIONS.has(operation)) {
+    // `shopIds === null` happens only in a PLATFORM scope, where leaving the
+    // filter off is the deliberate, audited choice. Every other scope —
+    // including a customer's — carries the shops it may see, so no branch here
+    // can fall through to an unscoped query.
     if (tenantField && shopIds !== null) {
       next.where = withShopFilter(next.where, shopIds, {
         allowGlobalNull: isGlobalShared,
       });
-    } else if (tenantField && shopIds === null && scope.kind !== "PLATFORM") {
-      // A non-platform scope with no shop restriction can only be a customer
-      // scope — pin it to its own rows.
-      if (customerId) {
-        next.where = withFieldFilter(next.where, "customerId", customerId);
-      }
     }
 
+    // A customer's own rows are narrowed again by customerId. Catalogue rows
+    // have no customerId, so they stay shop-wide — which is what a storefront
+    // needs and nothing more.
     if (customerId && isCustomerModel) {
       next.where = withFieldFilter(next.where, CUSTOMER_MODELS[model] ?? "customerId", customerId);
     }
@@ -350,8 +565,12 @@ function withShopFilter(
 function withFieldFilter(
   where: unknown,
   field: string,
-  value: string,
+  value: string | { in: string[] } | typeof DENY,
 ): Record<string, unknown> {
+  if (value === DENY) {
+    // Matches no row: the deny-by-default answer for an out-of-scope lookup.
+    return { ...(where && typeof where === "object" ? (where as Record<string, unknown>) : {}), [field]: { in: [] } };
+  }
   const base = where && typeof where === "object" ? (where as Record<string, unknown>) : {};
   return { ...base, [field]: value };
 }

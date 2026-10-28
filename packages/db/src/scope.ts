@@ -31,11 +31,22 @@ export interface StoreScope {
   permissions: readonly string[];
 }
 
-/** An end customer. Scoped to their own rows, never to a shop. */
+/**
+ * An end customer, always pinned to the storefront they are browsing.
+ *
+ * `shopIds` is required, not optional, and that is load-bearing. A customer
+ * reads two very different sets of rows: catalogue rows belonging to ONE shop
+ * (which they have no `customerId` on) and their own orders (which they do).
+ * Without a shop on the scope, the catalogue half can only be answered by
+ * leaving the query unscoped — the exact hole the extension exists to close.
+ * The storefront route always names a shop, so the scope always has one.
+ */
 export interface CustomerScope {
   kind: "CUSTOMER";
   customerId: string;
   sessionId: string;
+  /** Exactly one shop: one shop per cart, one storefront at a time. */
+  shopIds: readonly string[];
 }
 
 /**
@@ -53,6 +64,16 @@ export interface PlatformScope {
 }
 
 /**
+ * A logged-out visitor on a storefront. They may read the shop's public
+ * catalogue and nothing else — which is enforced by an allowlist, not by
+ * remembering to add each new private model to a blocklist.
+ */
+export interface PublicScope {
+  kind: "PUBLIC";
+  shopIds: readonly string[];
+}
+
+/**
  * Background work with no user: webhooks, cron ticks, seeds. It must name the
  * shops it may touch, so a bug cannot silently widen it to the whole
  * platform.
@@ -63,7 +84,12 @@ export interface SystemScope {
   shopIds: readonly string[];
 }
 
-export type Scope = StoreScope | CustomerScope | PlatformScope | SystemScope;
+export type Scope =
+  | StoreScope
+  | CustomerScope
+  | PlatformScope
+  | PublicScope
+  | SystemScope;
 
 const storage = new AsyncLocalStorage<Scope>();
 
@@ -149,9 +175,10 @@ export function allowedShopIds(scope: Scope): readonly string[] | null {
       }
       return scope.shopIds;
     case "CUSTOMER":
-      // Customers are scoped by customerId, not shopId — they may have ordered
-      // from several shops. See `customerIdForScope`.
-      return null;
+    case "PUBLIC":
+      // Both are pinned to the storefront they are browsing. A customer's own
+      // rows are narrowed further by `customerIdForScope`.
+      return scope.shopIds;
     case "PLATFORM":
       return null;
   }
@@ -160,6 +187,19 @@ export function allowedShopIds(scope: Scope): readonly string[] | null {
 /** The customer ID a customer scope is pinned to, else null. */
 export function customerIdForScope(scope: Scope): string | null {
   return scope.kind === "CUSTOMER" ? scope.customerId : null;
+}
+
+/** Narrow a scope to a single customer + storefront. */
+export function toCustomerScope(
+  input: Omit<CustomerScope, "kind">,
+): CustomerScope {
+  if (input.shopIds.length === 0) {
+    throw new AppError(
+      ERROR_CODES.MISSING_TENANT_SCOPE,
+      "A customer scope must name the shop it is browsing",
+    );
+  }
+  return { kind: "CUSTOMER", ...input };
 }
 
 /** True when the scope may see rows belonging to `shopId`. */
@@ -172,8 +212,20 @@ export function scopeCoversShop(scope: Scope, shopId: string): boolean {
     case "SYSTEM":
       return scope.shopIds.includes(shopId);
     case "CUSTOMER":
-      return false;
+    case "PUBLIC":
+      return scope.shopIds.includes(shopId);
   }
+}
+
+/** Narrow a scope to a single logged-out storefront visitor. */
+export function toPublicScope(input: Omit<PublicScope, "kind">): PublicScope {
+  if (input.shopIds.length === 0) {
+    throw new AppError(
+      ERROR_CODES.MISSING_TENANT_SCOPE,
+      "A public scope must name the shop being browsed",
+    );
+  }
+  return { kind: "PUBLIC", ...input };
 }
 
 /** Narrow a scope to a single shop, used by store procedures after resolving

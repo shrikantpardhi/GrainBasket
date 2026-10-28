@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN     "gstBps" INTEGER NOT NULL DEFAULT 500;

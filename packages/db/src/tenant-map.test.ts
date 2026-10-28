@@ -8,11 +8,19 @@
  */
 
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { TENANT_MODELS, GLOBAL_SHARED_MODELS } from "./tenant";
 
-const SCHEMA_PATH = join(process.cwd(), "prisma", "schema.prisma");
+// Resolved from this file, not process.cwd() — the test must pass whether it
+// is run from the package or from the repo root.
+const SCHEMA_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "prisma",
+  "schema.prisma",
+);
 
 /** Parse "model X { ... }" blocks and report which declare a shopId column. */
 function modelsWithShopId(): { model: string; nullable: boolean }[] {

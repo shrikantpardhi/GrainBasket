@@ -20,6 +20,17 @@ export const LOCALE_LABELS: Record<Locale, string> = {
 };
 
 /**
+ * BCP-47 tags for Intl formatting. Kept separate from `Locale`: the UI language
+ * and the number/date format are different decisions, and India uses the
+ * lakh/crore grouping in both locales. Formatting "1200.00" as "$1,200" because
+ * the tag was plain "en" would be a visible bug on every price.
+ */
+export const INTL_TAGS: Record<Locale, string> = {
+  en: "en-IN",
+  hi: "hi-IN",
+};
+
+/**
  * Exact IANA zone for the business. Everything money- or day-boundary-related
  * (shift close, business date on a ledger row, "today's orders") resolves
  * against this, never against the server's local time — which on a serverless

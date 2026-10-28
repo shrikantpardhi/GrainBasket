@@ -9,3 +9,7 @@ allowBuilds:
   prisma: true
   sharp: true
   unrs-resolver: true
+
+permissions:
+  '@trpc/server':
+    skills: true
