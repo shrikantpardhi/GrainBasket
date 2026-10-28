@@ -1,0 +1,30 @@
+{
+  "name": "@grain-basket/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./root": "./src/root.ts",
+    "./context": "./src/context.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@grain-basket/auth": "workspace:*",
+    "@grain-basket/contracts": "workspace:*",
+    "@grain-basket/core": "workspace:*",
+    "@grain-basket/db": "workspace:*",
+    "@trpc/server": "11.19.0",
+    "superjson": "2.2.6",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@grain-basket/tsconfig": "workspace:*",
+    "dotenv": "18.0.9",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}
